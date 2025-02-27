@@ -31,3 +31,4 @@ for i in range(num_cost_matrices):
     all_cost_matrices_sub.append(creat_sub_matrices_greedy(cost_matrices[i], [round(len(cost_matrices[i]) / 2)], [round(len(cost_matrices[i][0]) / 2)]))
 
 print(all_cost_matrices_sub[0][0].shape)
+print(all_cost_matrices_sub[0][2].shape)
