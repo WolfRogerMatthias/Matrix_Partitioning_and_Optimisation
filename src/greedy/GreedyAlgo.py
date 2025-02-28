@@ -22,7 +22,10 @@ if __name__ == "__main__":
     print(f'Number of cost matrices: {num_cost_matrices}')
     cost_matrices = matrix_reader.load_h5_file('../data/cost_matrices.h5', num_cost_matrices)
     matrix_reader.print_matrix(0)
-    sub_matrices = greedy_algo.greedy_sub_matrices(cost_matrices[0], [round(len(cost_matrices[0]) / 2)], [round(len(cost_matrices[0][0]) / 2)])
-    matrix_reader.print_sub_matrix(sub_matrices[0])
-    matrix_reader.print_sub_matrix(sub_matrices[1])
+    sub_matrices = []
+    for i in range(num_cost_matrices):
+        sub_matrices.append(greedy_algo.greedy_sub_matrices(cost_matrices[i], [round(len(cost_matrices[i]) / 2)], [round(len(cost_matrices[i][0]) / 2)]))
+
+    matrix_reader.print_sub_matrix(sub_matrices[0][0])
+    matrix_reader.print_sub_matrix(sub_matrices[0][1])
 
