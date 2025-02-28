@@ -17,10 +17,14 @@ class GreedyAlgo:
 if __name__ == "__main__":
     matrix_reader = MatrixReader()
     greedy_algo = GreedyAlgo()
+
     len_dataset = 188
     num_cost_matrices = len(list(combinations(range(len_dataset), r=2)))
+
     print(f'Number of cost matrices: {num_cost_matrices}')
+
     cost_matrices = matrix_reader.load_h5_file('../data/cost_matrices.h5', num_cost_matrices)
+
     matrix_reader.print_matrix(0)
     sub_matrices = []
     for i in range(num_cost_matrices):
