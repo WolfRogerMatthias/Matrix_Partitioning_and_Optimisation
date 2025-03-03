@@ -1,7 +1,6 @@
 import numpy as np
 from src.MatrixReader import MatrixReader
 from itertools import combinations
-from itertools import chain
 
 class GreedyAlgo:
 

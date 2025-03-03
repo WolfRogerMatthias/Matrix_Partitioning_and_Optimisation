@@ -12,7 +12,7 @@ class MatrixReader:
 
     def print_matrix(self, pos):
         row, col = self.matrix[pos].shape
-
+        print(self.matrix[pos].shape)
         outputstr = ''
         for i in range(row):
             for j in range(col):
@@ -22,6 +22,7 @@ class MatrixReader:
 
     def print_sub_matrix(self, matrix):
         row, col = matrix.shape
+        print(matrix.shape)
         outputstr = ''
         for i in range(row):
             for j in range(col):
