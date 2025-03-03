@@ -5,7 +5,7 @@ from src.MatrixReader import MatrixReader
 
 
 class KMeansAlgo:
-    def kmeans_sub_matricx(self, matrix, num_clusters):
+    def kmeans_sub_matrix(self, matrix, num_clusters):
         cluster_matrices = []
         kmeans_row = KMeans(n_clusters=num_clusters)
         kmeans_col = KMeans(n_clusters=num_clusters)
@@ -49,6 +49,11 @@ if __name__ == '__main__':
     cost_matrices = matrix_reader.load_h5_file('../data/cost_matrices.h5', num_cost_matrices)
 
     matrix_reader.print_matrix(0)
-    sub_matrices = kmeans_algo.kmeans_sub_matricx(cost_matrices[0], 4)
-    for i in range(len(sub_matrices)):
-        matrix_reader.print_sub_matrix(sub_matrices[i])
+    sub_matrices = []
+    print('Starting K-Means algorithm')
+#    for i in range(num_cost_matrices):
+#        sub_matrices.append(kmeans_algo.kmeans_sub_matrix(cost_matrices[i], 4))
+    sub_matrices.append(kmeans_algo.kmeans_sub_matrix(cost_matrices[0], 3))
+    print('Ending K-Means algorithm')
+    for i in range(len(sub_matrices[0])):
+        matrix_reader.print_sub_matrix(sub_matrices[0][i])
