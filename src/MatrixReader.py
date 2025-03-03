@@ -21,12 +21,16 @@ class MatrixReader:
         print(outputstr)
 
     def print_sub_matrix(self, matrix):
-        row, col = matrix.shape
-        print(matrix.shape)
-        outputstr = ''
-        for i in range(row):
-            for j in range(col):
-                outputstr += str('{:.3f}'.format(round(matrix[i, j], 3))) + ' '
-            outputstr += '\n'
-        print(outputstr)
+        if (type(matrix) == str):
+            print(matrix)
+            return 0
+        else:
+            row, col = matrix.shape
+            print(matrix.shape)
+            outputstr = ''
+            for i in range(row):
+                for j in range(col):
+                    outputstr += str('{:.3f}'.format(round(matrix[i, j], 3))) + ' '
+                outputstr += '\n'
+            print(outputstr)
 
