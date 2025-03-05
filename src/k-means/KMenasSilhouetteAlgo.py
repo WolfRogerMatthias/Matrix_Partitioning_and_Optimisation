@@ -7,8 +7,8 @@ import matplotlib.pyplot as plt
 from KMeansAlgo import KMeansAlgo
 
 class KMenasSilhouetteAlgo:
-    def __init__(self, KMeansAlgo):
-        KMeansAlgo = KMeansAlgo
+    def __init__(self, kmeans_algo):
+        kmenas_algo = kmeans_algo
 
 
     def kmeans_silhouette(self, matrix):
@@ -34,8 +34,8 @@ class KMenasSilhouetteAlgo:
 
 if __name__ == '__main__':
     matrix_reader = MatrixReader()
-    KMeansAlgo = KMeansAlgo()
-    kmeans_silhouette = KMenasSilhouetteAlgo(KMeansAlgo)
+    kmeans_algo = KMeansAlgo()
+    kmeans_silhouette = KMenasSilhouetteAlgo(kmeans_algo)
 
     len_dataset = 188
     num_cost_matrices = len(list(combinations(range(len_dataset), r=2)))
