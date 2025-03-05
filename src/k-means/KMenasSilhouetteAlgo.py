@@ -22,7 +22,7 @@ class KMenasSilhouetteAlgo:
             silhouette_avg.append(silhouette_score(matrix, cluster_labels))
         num_clusters = K[np.argmax(silhouette_avg)]
 
-        cluster_matrices = KMeansAlgo.kmeans_sub_matrix(matrix, num_clusters)
+        cluster_matrices = kmeans_algo.kmeans_sub_matrix(matrix, num_clusters)
 
         plt.plot(K, silhouette_avg, 'bx-')
         plt.xticks(K)
