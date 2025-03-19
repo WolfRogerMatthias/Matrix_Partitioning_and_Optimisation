@@ -7,6 +7,9 @@ from itertools import chain
 
 
 class KMeansAlgo:
+    def __init__(self):
+        self.number_of_turns = []
+
     def kmeans_sub_matrix(self, matrix, num_clusters):
         counter = 0
         not_injective = False
@@ -53,6 +56,8 @@ class KMeansAlgo:
                 else:
                     not_injective = False
                 i += 1
+            if not_injective:
+                self.number_of_turns.append(counter)
         return cluster_matrices, row_indices_map, col_indices_map
 
 
@@ -61,7 +66,7 @@ if __name__ == '__main__':
     kmeans_algo = KMeansAlgo()
     applied_liner_sum = OptimizeAlgoApplied()
 
-    num_matrix = 10000
+    num_matrix = 0
 
     len_dataset = 188
     num_cost_matrices = len(list(combinations(range(len_dataset), r=2)))
@@ -91,3 +96,10 @@ if __name__ == '__main__':
 
     sorted_lists = [list(x) for x in zip(*sorted(zip(total_mapping[0], total_mapping[1])))]
     applied_liner_sum.print_linear_sum_assignment(sorted_lists)
+
+#    for i in range(num_cost_matrices):
+#        test = kmeans_algo.kmeans_sub_matrix(cost_matrices[i], 3)
+
+#    print(np.average(kmeans_algo.number_of_turns))
+#    print(len(kmeans_algo.number_of_turns) / num_cost_matrices)
+
