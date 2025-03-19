@@ -14,9 +14,10 @@ class OptimizeAlgoApplied:
     def print_linear_sum_assignment_sub(self, num_mapping):
         for i in range(len(self.row_ind[num_mapping])):
             print(f'{self.row_ind[num_mapping][i]} -> {self.col_ind[num_mapping][i]}')
-        print('\n')
+        print('')
 
     def print_linear_sum_assignment(self, mapping):
         for i in range(len(mapping[0])):
             print(f'{mapping[0][i]} -> {mapping[1][i]}')
+        print('')
 

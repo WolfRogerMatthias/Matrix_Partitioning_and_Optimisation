@@ -3,6 +3,7 @@ from src.MatrixReader import MatrixReader
 from itertools import combinations
 from itertools import chain
 from src.optimize.OptimizeAlgoApplied import OptimizeAlgoApplied
+import h5py
 
 class GreedyAlgo:
 
@@ -19,7 +20,7 @@ class GreedyAlgo:
 
         return sub_matrices
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     matrix_reader = MatrixReader()
     greedy_algo = GreedyAlgo()
     applied_liner_sum = OptimizeAlgoApplied()
@@ -27,47 +28,49 @@ if __name__ == "__main__":
     num_of_matrix = 0
 
     len_dataset = 188
-    num_cost_matrices = len(list(combinations(range(len_dataset), r=2)))
 
+    num_cost_matrices = len(list(combinations(range(len_dataset), r=2)))
     print(f'Number of cost matrices: {num_cost_matrices}')
 
     cost_matrices = matrix_reader.load_h5_file('../data/cost_matrices.h5', num_cost_matrices)
 
-    matrix_reader.print_matrix(num_of_matrix)
-    sub_matrices = []
-    row_intervals = []
-    col_intervals = []
-    for i in range(num_cost_matrices):
+    total_mapping = []
+    for i in range(len(cost_matrices)):
         rows = len(cost_matrices[i])
         cols = len(cost_matrices[i][0])
         row_interval = [round(rows / 4), round(rows / 2), round(rows / 4) * 3]
         col_interval = [round(cols / 4), round(cols / 2), round(cols / 4) * 3]
-        row_intervals.append(row_interval)
-        col_intervals.append(col_interval)
-        sub_matrices.append(greedy_algo.greedy_sub_matrices(cost_matrices[i], row_interval, col_interval))
+        sub_matrices = greedy_algo.greedy_sub_matrices(cost_matrices[i], row_interval, col_interval)
 
-    mapping_row = []
-    mapping_col = []
-    for i in range(len(sub_matrices[num_of_matrix])):
-        matrix_reader.print_sub_matrix(sub_matrices[num_of_matrix][i])
-        row, col = applied_liner_sum.compute_linear_sum_assignment(sub_matrices[num_of_matrix][i])
-        mapping_row.append(row)
-        mapping_col.append(col)
+        mapping_row = []
+        mapping_col = []
+        for j in range(len(sub_matrices)):
+            row, col = applied_liner_sum.compute_linear_sum_assignment(sub_matrices[j])
+            mapping_row.append(row)
+            mapping_col.append(col)
 
+        complete_row_mapping = []
+        complete_col_mapping = []
+        for j in range(len(mapping_row)):
+            if (j < 1):
+                complete_row_mapping.append(mapping_row[j])
+                complete_col_mapping.append(mapping_col[j])
+            else:
+                col_len = col_interval[j - 1]
+                row_len = row_interval[j - 1]
+                complete_row_mapping.append((mapping_row[j] + row_len))
+                complete_col_mapping.append((mapping_col[j] + col_len))
+        total_mapping.append([list(chain(*complete_row_mapping)), list(chain(*complete_col_mapping))])
 
-    complete_row_mapping = []
-    complete_col_mapping = []
-    for i in range(len(mapping_row)):
-        applied_liner_sum.print_linear_sum_assignment_sub(i)
-        if (i < 1):
-            complete_row_mapping.append(mapping_row[i])
-            complete_col_mapping.append(mapping_col[i])
-        else:
-            col_len = col_intervals[num_of_matrix][i - 1]
-            row_len = row_intervals[num_of_matrix][i - 1]
-            complete_row_mapping.append((mapping_row[i] + row_len))
-            complete_col_mapping.append((mapping_col[i] + col_len))
+    with h5py.File('test.h5', 'w') as file:
+        for i in range(num_cost_matrices):
+            file.create_dataset(f'matrix_mapping{i}', data=total_mapping[i])
+        file.close()
+    with h5py.File('test.h5', 'r') as file:
+        test_mapping = {i: np.array(file[f'matrix_mapping{i}']) for i in range(num_cost_matrices)}
+        file.close()
 
-
-    total_mapping = [list(chain(*complete_row_mapping)), list(chain(*complete_col_mapping))]
-    applied_liner_sum.print_linear_sum_assignment(total_mapping)
+    matrix_reader.print_matrix(num_of_matrix)
+    applied_liner_sum.print_linear_sum_assignment(test_mapping[num_of_matrix])
+    matrix_reader.print_matrix(10000)
+    applied_liner_sum.print_linear_sum_assignment(test_mapping[10000])
