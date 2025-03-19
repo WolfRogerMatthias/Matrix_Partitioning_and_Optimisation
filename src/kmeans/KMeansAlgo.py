@@ -14,7 +14,6 @@ class KMeansAlgo:
         cluster_matrices = []
         row_indices_map = []
         col_indices_map = []
-
         while not not_injective and counter < 10:
             counter += 1
             not_injective = True
@@ -62,6 +61,8 @@ if __name__ == '__main__':
     kmeans_algo = KMeansAlgo()
     applied_liner_sum = OptimizeAlgoApplied()
 
+    num_matrix = 10000
+
     len_dataset = 188
     num_cost_matrices = len(list(combinations(range(len_dataset), r=2)))
 
@@ -69,9 +70,9 @@ if __name__ == '__main__':
 
     cost_matrices = matrix_reader.load_h5_file('../data/cost_matrices.h5', num_cost_matrices)
 
-    matrix_reader.print_matrix(0)
+    matrix_reader.print_matrix(num_matrix)
 
-    sub_matrices, row_indices, col_indices = kmeans_algo.kmeans_sub_matrix(cost_matrices[0], 3)
+    sub_matrices, row_indices, col_indices = kmeans_algo.kmeans_sub_matrix(cost_matrices[num_matrix], 3)
 
     complete_row_mapping = []
     complete_col_mapping = []
@@ -85,3 +86,8 @@ if __name__ == '__main__':
 
     total_mapping = [list(chain(*complete_row_mapping)), list(chain(*complete_col_mapping))]
     applied_liner_sum.print_linear_sum_assignment(total_mapping)
+
+    print('')
+
+    sorted_lists = [list(x) for x in zip(*sorted(zip(total_mapping[0], total_mapping[1])))]
+    applied_liner_sum.print_linear_sum_assignment(sorted_lists)
