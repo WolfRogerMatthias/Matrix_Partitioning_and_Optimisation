@@ -4,6 +4,7 @@ from sklearn.cluster import KMeans
 from src.MatrixReader import MatrixReader
 from src.optimize.OptimizeAlgoApplied import OptimizeAlgoApplied
 from itertools import chain
+import h5py
 
 
 class KMeansAlgo:
@@ -36,13 +37,16 @@ class KMeansAlgo:
             row_unique, row_count = np.unique(row_clusters, return_counts=True)
             col_unique, col_count = np.unique(col_clusters, return_counts=True)
 
-            row_ids = list(zip(row_unique, row_count))
-            col_ids = list(zip(col_unique, col_count))
+            row_ids_count = list(zip(row_unique, row_count))
+            col_ids_count = list(zip(col_unique, col_count))
 
-            row_ids_sorted = sorted(row_ids, key=lambda x: x[1], reverse=True)
-            col_ids_sorted = sorted(col_ids, key=lambda x: x[1], reverse=True)
+            row_ids_sorted = sorted(row_ids_count, key=lambda x: x[1], reverse=True)
+            col_ids_sorted = sorted(col_ids_count, key=lambda x: x[1], reverse=True)
 
-            ids = list(zip(list(zip(*row_ids_sorted))[0],list(zip(*col_ids_sorted))[0]))
+            row_ids = list(zip(*row_ids_sorted))[0]
+            col_ids = list(zip(*col_ids_sorted))[0]
+
+            ids = list(zip(row_ids, col_ids))
             i = 0
             for row_id, col_id in ids:
                 if (row_ids_sorted[i][1] <= col_ids_sorted[i][1]):
@@ -75,31 +79,34 @@ if __name__ == '__main__':
 
     cost_matrices = matrix_reader.load_h5_file('../data/cost_matrices.h5', num_cost_matrices)
 
+    total_mapping = []
+
+    for i in range(num_cost_matrices):
+        sub_matrices, row_indices, col_indices = kmeans_algo.kmeans_sub_matrix(cost_matrices[i], 3)
+
+        complete_row_mapping = []
+        complete_col_mapping = []
+
+
+        for j in range(len(sub_matrices)):
+            row_mapping, col_mapping = applied_liner_sum.compute_linear_sum_assignment(sub_matrices[j])
+
+            complete_row_mapping.append([row_indices[j][x] for x in row_mapping])
+            complete_col_mapping.append([col_indices[j][x] for x in col_mapping])
+
+        mapping = [list(chain(*complete_row_mapping)), list(chain(*complete_col_mapping))]
+        total_mapping.append(mapping)
+
+    with h5py.File('test.h5', 'w') as file:
+        for i in range(num_cost_matrices):
+            file.create_dataset(f'matrix_mapping{i}', data=total_mapping[i])
+        file.close()
+    with h5py.File('test.h5', 'r') as file:
+        test_mapping = {i: np.array(file[f'matrix_mapping{i}']) for i in range(num_cost_matrices)}
+        file.close()
+
     matrix_reader.print_matrix(num_matrix)
-
-    sub_matrices, row_indices, col_indices = kmeans_algo.kmeans_sub_matrix(cost_matrices[num_matrix], 3)
-
-    complete_row_mapping = []
-    complete_col_mapping = []
-
-    for i in range(len(sub_matrices)):
-        matrix_reader.print_sub_matrix(sub_matrices[i])
-        row_mapping, col_mapping = applied_liner_sum.compute_linear_sum_assignment(sub_matrices[i])
-        applied_liner_sum.print_linear_sum_assignment_sub(i)
-        complete_row_mapping.append([row_indices[i][x] for x in row_mapping])
-        complete_col_mapping.append([col_indices[i][x] for x in col_mapping])
-
-    total_mapping = [list(chain(*complete_row_mapping)), list(chain(*complete_col_mapping))]
-    applied_liner_sum.print_linear_sum_assignment(total_mapping)
-
-    print('')
-
-    sorted_lists = [list(x) for x in zip(*sorted(zip(total_mapping[0], total_mapping[1])))]
-    applied_liner_sum.print_linear_sum_assignment(sorted_lists)
-
-#    for i in range(num_cost_matrices):
-#        test = kmeans_algo.kmeans_sub_matrix(cost_matrices[i], 3)
-
-#    print(np.average(kmeans_algo.number_of_turns))
-#    print(len(kmeans_algo.number_of_turns) / num_cost_matrices)
+    applied_liner_sum.print_linear_sum_assignment(test_mapping[num_matrix])
+    matrix_reader.print_matrix(10000)
+    applied_liner_sum.print_linear_sum_assignment(test_mapping[10000])
 
