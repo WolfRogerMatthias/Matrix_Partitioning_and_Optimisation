@@ -5,6 +5,7 @@ from src.MatrixReader import MatrixReader
 from src.optimize.OptimizeAlgoApplied import OptimizeAlgoApplied
 from itertools import chain
 import h5py
+import time
 
 
 class KMeansAlgo:
@@ -13,17 +14,17 @@ class KMeansAlgo:
 
     def kmeans_sub_matrix(self, matrix, num_clusters):
         counter = 0
-        not_injective = False
+        not_injective = True
 
         cluster_matrices = []
         row_indices_map = []
         col_indices_map = []
-        while not not_injective and counter < 10:
+        while not_injective and counter < 10:
             counter += 1
-            not_injective = True
-            cluster_matrices = []
-            row_indices_map = []
-            col_indices_map = []
+            not_injective = False
+            cluster_matrices.clear()
+            row_indices_map.clear()
+            col_indices_map.clear()
 
             kmeans_row = KMeans(n_clusters=num_clusters)
             kmeans_col = KMeans(n_clusters=num_clusters)
@@ -34,22 +35,16 @@ class KMeansAlgo:
             row_clusters = kmeans_row.labels_
             col_clusters = kmeans_col.labels_
 
-            row_unique, row_count = np.unique(row_clusters, return_counts=True)
-            col_unique, col_count = np.unique(col_clusters, return_counts=True)
+            row_count = np.bincount(row_clusters)
+            col_count = np.bincount(col_clusters)
 
-            row_ids_count = list(zip(row_unique, row_count))
-            col_ids_count = list(zip(col_unique, col_count))
+            row_sorted_ids = np.argsort(row_count)[::-1]
+            cols_sorted_ids = np.argsort(col_clusters)[::-1]
 
-            row_ids_sorted = sorted(row_ids_count, key=lambda x: x[1], reverse=True)
-            col_ids_sorted = sorted(col_ids_count, key=lambda x: x[1], reverse=True)
-
-            row_ids = list(zip(*row_ids_sorted))[0]
-            col_ids = list(zip(*col_ids_sorted))[0]
-
-            ids = list(zip(row_ids, col_ids))
+            ids = list(zip(row_sorted_ids, cols_sorted_ids))
             i = 0
             for row_id, col_id in ids:
-                if (row_ids_sorted[i][1] <= col_ids_sorted[i][1]):
+                if row_count[row_id] <= col_count[col_id]:
                     row_indices = np.where(row_clusters == row_id)[0]
                     col_indices = np.where(col_clusters == col_id)[0]
 
@@ -58,9 +53,9 @@ class KMeansAlgo:
                     row_indices_map.append(row_indices)
                     col_indices_map.append(col_indices)
                 else:
-                    not_injective = False
+                    not_injective = True
                 i += 1
-            if not_injective:
+            if not not_injective:
                 self.number_of_turns.append(counter)
         return cluster_matrices, row_indices_map, col_indices_map
 
