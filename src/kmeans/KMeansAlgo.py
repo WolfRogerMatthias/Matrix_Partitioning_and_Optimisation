@@ -38,12 +38,12 @@ class KMeansAlgo:
             col_count = np.bincount(col_clusters)
 
             row_sorted_ids = np.argsort(row_count)[::-1]
-            col_sorted_ids = np.argsort(col_clusters)[::-1]
+            col_sorted_ids = np.argsort(col_count)[::-1]
 
             ids = list(zip(row_sorted_ids, col_sorted_ids))
             i = 0
             for row_id, col_id in ids:
-                if row_count[row_id] <= col_count[row_id]:
+                if row_count[row_id] <= col_count[col_id]:
                     row_indices = np.where(row_clusters == row_id)[0]
                     col_indices = np.where(col_clusters == col_id)[0]
 

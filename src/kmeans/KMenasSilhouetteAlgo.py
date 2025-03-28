@@ -17,7 +17,9 @@ class KMenasSilhouetteAlgo:
 
     def kmeans_silhouette(self, matrix):
         silhouette_avg = []
-        K = range(2, round(len(matrix) / 3))
+
+        K = range(2, len(matrix) // 3)
+
         for num_cluster in K:
             kmeans = KMeans(n_clusters=num_cluster)
             kmeans.fit(matrix)
@@ -73,3 +75,4 @@ if __name__ == '__main__':
     applied_liner_sum.print_linear_sum_assignment(test_mapping[0])
     matrix_reader.print_matrix(10000)
     applied_liner_sum.print_linear_sum_assignment(test_mapping[10000])
+    print(f'Number of completed mappings {len(kmeans_algo.number_of_turns) / num_cost_matrices * 100}%')
