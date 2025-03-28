@@ -5,7 +5,6 @@ from src.MatrixReader import MatrixReader
 from src.optimize.OptimizeAlgoApplied import OptimizeAlgoApplied
 from itertools import chain
 import h5py
-import time
 
 
 class KMeansAlgo:
@@ -39,12 +38,12 @@ class KMeansAlgo:
             col_count = np.bincount(col_clusters)
 
             row_sorted_ids = np.argsort(row_count)[::-1]
-            cols_sorted_ids = np.argsort(col_clusters)[::-1]
+            col_sorted_ids = np.argsort(col_clusters)[::-1]
 
-            ids = list(zip(row_sorted_ids, cols_sorted_ids))
+            ids = list(zip(row_sorted_ids, col_sorted_ids))
             i = 0
             for row_id, col_id in ids:
-                if row_count[row_id] <= col_count[col_id]:
+                if row_count[row_id] <= col_count[row_id]:
                     row_indices = np.where(row_clusters == row_id)[0]
                     col_indices = np.where(col_clusters == col_id)[0]
 
@@ -104,4 +103,5 @@ if __name__ == '__main__':
     applied_liner_sum.print_linear_sum_assignment(test_mapping[num_matrix])
     matrix_reader.print_matrix(10000)
     applied_liner_sum.print_linear_sum_assignment(test_mapping[10000])
+    print(f'Number of completed mappings {len(kmeans_algo.number_of_turns) / num_cost_matrices * 100}%')
 
