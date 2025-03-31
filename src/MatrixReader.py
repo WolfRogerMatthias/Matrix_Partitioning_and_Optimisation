@@ -11,26 +11,26 @@ class MatrixReader:
         return self.matrix
 
     def print_matrix(self, pos):
-        row, col = self.matrix[pos].shape
+        max_int_digits = max(len(str(int(num))) for row in self.matrix[pos] for num in row)
+
+        format_str = f"{{:>{max_int_digits + 3}.2f}}"
         print(self.matrix[pos].shape)
-        outputstr = ''
-        for i in range(row):
-            for j in range(col):
-                outputstr += str('{:.3f}'.format(round(self.matrix[pos][i, j], 3))) + ' '
-            outputstr += '\n'
-        print(outputstr)
+        for row in self.matrix[pos]:
+            formatted_row = [format_str.format(num) for num in row]
+            print(" ".join(formatted_row))
+        print()
 
     def print_sub_matrix(self, matrix):
         if (type(matrix) == str):
             print(matrix)
             return 0
         else:
-            row, col = matrix.shape
+            max_int_digits = max(len(str(int(num))) for row in matrix for num in row)
+
+            format_str = f"{{:>{max_int_digits + 3}.2f}}"
             print(matrix.shape)
-            outputstr = ''
-            for i in range(row):
-                for j in range(col):
-                    outputstr += str('{:.3f}'.format(round(matrix[i, j], 3))) + ' '
-                outputstr += '\n'
-            print(outputstr)
+            for row in self.matrix:
+                formatted_row = [format_str.format(num) for num in row]
+                print(" ".join(formatted_row))
+            print()
 
