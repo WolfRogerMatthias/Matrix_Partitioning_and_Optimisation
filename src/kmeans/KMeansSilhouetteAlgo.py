@@ -7,7 +7,6 @@ from KMeansAlgo import KMeansAlgo
 from itertools import chain
 from src.optimize.OptimizeAlgoApplied import OptimizeAlgoApplied
 import h5py
-import time
 
 
 class KMenasSilhouetteAlgo:
@@ -43,7 +42,7 @@ if __name__ == '__main__':
 
     print(f'Number of cost matrices: {num_cost_matrices}')
 
-    cost_matrices = matrix_reader.load_h5_file('../data/cost_matrices.h5', num_cost_matrices)
+    cost_matrices = matrix_reader.load_h5_file('./src/data/cost_matrices.h5', num_cost_matrices)
 
     total_mapping = []
     for i in range(num_cost_matrices):

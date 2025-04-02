@@ -18,7 +18,7 @@ class KMeansAlgo:
         cluster_matrices = []
         row_indices_map = []
         col_indices_map = []
-        while not_injective and counter < 10:
+        while not_injective and counter < 20:
             counter += 1
             not_injective = False
             cluster_matrices.clear()
@@ -71,7 +71,7 @@ if __name__ == '__main__':
 
     print(f'Number of cost matrices: {num_cost_matrices}')
 
-    cost_matrices = matrix_reader.load_h5_file('../data/cost_matrices.h5', num_cost_matrices)
+    cost_matrices = matrix_reader.load_h5_file('./src/data/cost_matrices.h5', num_cost_matrices)
 
     total_mapping = []
 
