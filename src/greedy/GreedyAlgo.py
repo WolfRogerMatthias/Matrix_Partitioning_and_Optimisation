@@ -1,3 +1,5 @@
+from functools import total_ordering
+
 import numpy as np
 from src.MatrixReader import MatrixReader
 from itertools import combinations
@@ -6,6 +8,8 @@ from src.optimize.OptimizeAlgoApplied import OptimizeAlgoApplied
 import h5py
 
 class GreedyAlgo:
+    def __init__(self, OptimizeAlgoApplied):
+        self.OptimizeAlgoApplied = OptimizeAlgoApplied
 
     def greedy_sub_matrices(self, matrix, vertical_split, horizontal_split):
         if not isinstance(vertical_split, list) or not isinstance(horizontal_split, list):
@@ -20,10 +24,41 @@ class GreedyAlgo:
 
         return sub_matrices
 
+    def greedy_linear_applied(self, cost_matrices, num_of_matrices):
+        total_mapping = []
+        for i in range(num_of_matrices):
+            rows = len(cost_matrices[i])
+            cols = len(cost_matrices[i][0])
+            row_interval = [round(rows / 4), round(rows / 2), round(rows / 4) * 3]
+            col_interval = [round(cols / 4), round(cols / 2), round(cols / 4) * 3]
+            sub_matrices = self.greedy_sub_matrices(cost_matrices[i], row_interval, col_interval)
+
+            mapping_row = []
+            mapping_col = []
+            for j in range(len(sub_matrices)):
+                row, col = self.OptimizeAlgoApplied.compute_linear_sum_assignment(sub_matrices[j])
+                mapping_row.append(row)
+                mapping_col.append(col)
+
+            complete_row_mapping = []
+            complete_col_mapping = []
+            for j in range(len(mapping_row)):
+                if (j < 1):
+                    complete_row_mapping.append(mapping_row[j])
+                    complete_col_mapping.append(mapping_col[j])
+                else:
+                    col_len = col_interval[j - 1]
+                    row_len = row_interval[j - 1]
+                    complete_row_mapping.append((mapping_row[j] + row_len))
+                    complete_col_mapping.append((mapping_col[j] + col_len))
+            total_mapping.append([list(chain(*complete_row_mapping)), list(chain(*complete_col_mapping))])
+        return total_mapping
+
+
 if __name__ == '__main__':
     matrix_reader = MatrixReader()
-    greedy_algo = GreedyAlgo()
     applied_liner_sum = OptimizeAlgoApplied()
+    greedy_algo = GreedyAlgo(OptimizeAlgoApplied)
 
     num_of_matrix = 0
 
@@ -34,33 +69,7 @@ if __name__ == '__main__':
 
     cost_matrices = matrix_reader.load_h5_file('../data/cost_matrices.h5', num_cost_matrices)
 
-    total_mapping = []
-    for i in range(len(cost_matrices)):
-        rows = len(cost_matrices[i])
-        cols = len(cost_matrices[i][0])
-        row_interval = [round(rows / 4), round(rows / 2), round(rows / 4) * 3]
-        col_interval = [round(cols / 4), round(cols / 2), round(cols / 4) * 3]
-        sub_matrices = greedy_algo.greedy_sub_matrices(cost_matrices[i], row_interval, col_interval)
-
-        mapping_row = []
-        mapping_col = []
-        for j in range(len(sub_matrices)):
-            row, col = applied_liner_sum.compute_linear_sum_assignment(sub_matrices[j])
-            mapping_row.append(row)
-            mapping_col.append(col)
-
-        complete_row_mapping = []
-        complete_col_mapping = []
-        for j in range(len(mapping_row)):
-            if (j < 1):
-                complete_row_mapping.append(mapping_row[j])
-                complete_col_mapping.append(mapping_col[j])
-            else:
-                col_len = col_interval[j - 1]
-                row_len = row_interval[j - 1]
-                complete_row_mapping.append((mapping_row[j] + row_len))
-                complete_col_mapping.append((mapping_col[j] + col_len))
-        total_mapping.append([list(chain(*complete_row_mapping)), list(chain(*complete_col_mapping))])
+    total_mapping = greedy_algo.greedy_linear_applied(cost_matrices, num_of_matrix)
 
     with h5py.File('test.h5', 'w') as file:
         for i in range(num_cost_matrices):
