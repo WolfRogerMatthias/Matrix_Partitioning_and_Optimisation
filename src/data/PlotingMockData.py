@@ -28,5 +28,7 @@ if __name__ == '__main__':
 
     plt.plot(matrix_sizes, execution_times_linear, color='red')
     plt.plot(matrix_sizes, execution_times_greedy, color='blue')
+    plt.xlim(min(matrix_sizes), max(matrix_sizes))
+    #plt.ylim(min(execution_times_linear + execution_times_greedy), max(execution_times_linear + execution_times_greedy))
     plt.savefig(f'mock_data_together.png', format='png')
     plt.show()
