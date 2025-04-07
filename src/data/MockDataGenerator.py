@@ -1,11 +1,5 @@
 import numpy as np
 import h5py
-import timeit
-import time
-from src.optimize.OptimizeAlgoApplied import OptimizeAlgoApplied
-from src.greedy.GreedyAlgo import GreedyAlgo
-from itertools import chain
-
 
 class MockDataGenerator:
 
@@ -25,9 +19,13 @@ class MockDataGenerator:
 
 if __name__ == '__main__':
     MockDataGenerator = MockDataGenerator()
-    OptimizeAlgoApplied = OptimizeAlgoApplied()
-    greedy_algo = GreedyAlgo()
 
-#    MockDataGenerator.creating_mock_data('mock_data_60.h5', 10000, 60)
+    MockDataGenerator.creating_mock_data('mock_data_10.h5', 10000, 10)
+    MockDataGenerator.creating_mock_data('mock_data_20.h5', 10000, 20)
+    MockDataGenerator.creating_mock_data('mock_data_40.h5', 10000, 40)
+    MockDataGenerator.creating_mock_data('mock_data_60.h5', 10000, 60)
+    MockDataGenerator.creating_mock_data('mock_data_80.h5', 10000, 80)
+    MockDataGenerator.creating_mock_data('mock_data_100.h5', 10000, 100)
+    MockDataGenerator.creating_mock_data('mock_data_200.h5', 10000, 200)
+    MockDataGenerator.creating_mock_data('mock_data_400.h5', 10000, 400)
 
-    cost_matrices = MockDataGenerator.loadig_mock_data('mock_data_60.h5', 10000)
