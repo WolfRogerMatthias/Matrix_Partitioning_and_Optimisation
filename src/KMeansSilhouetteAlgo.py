@@ -5,7 +5,7 @@ from src.MatrixReader import MatrixReader
 from sklearn.metrics import silhouette_score
 from KMeansAlgo import KMeansAlgo
 from itertools import chain
-from src.optimize.OptimizeAlgoApplied import OptimizeAlgoApplied
+from src.OptimizeAlgoApplied import OptimizeAlgoApplied
 import h5py
 
 
@@ -42,7 +42,7 @@ if __name__ == '__main__':
 
     print(f'Number of cost matrices: {num_cost_matrices}')
 
-    cost_matrices = matrix_reader.load_h5_file('./src/data/cost_matrices.h5', num_cost_matrices)
+    cost_matrices = matrix_reader.load_h5_file('./data/cost_matrices.h5', num_cost_matrices)
 
     total_mapping = []
     for i in range(num_cost_matrices):
@@ -62,11 +62,11 @@ if __name__ == '__main__':
         total_mapping.append(mapping)
 
 
-    with h5py.File('test_silhouette.h5', 'w') as file:
+    with h5py.File('./data/KmeansAlgoSilhouetteMapping.h5', 'w') as file:
         for i in range(num_cost_matrices):
             file.create_dataset(f'matrix_mapping{i}', data=total_mapping[i])
         file.close()
-    with h5py.File('test_silhouette.h5', 'r') as file:
+    with h5py.File('./data/KmeansAlgoSilhouetteMapping.h5', 'r') as file:
         test_mapping = {i: np.array(file[f'matrix_mapping{i}']) for i in range(num_cost_matrices)}
         file.close()
 

@@ -1,15 +1,13 @@
-from functools import total_ordering
-
 import numpy as np
 from src.MatrixReader import MatrixReader
 from itertools import combinations
 from itertools import chain
-from src.optimize.OptimizeAlgoApplied import OptimizeAlgoApplied
+from src.OptimizeAlgoApplied import OptimizeAlgoApplied
 import h5py
 
 class GreedyAlgo:
-    def __init__(self, OptimizeAlgoApplied):
-        self.OptimizeAlgoApplied = OptimizeAlgoApplied
+    def __init__(self, applied_liner_sum):
+        self.OptimizeAlgoApplied = applied_liner_sum
 
     def greedy_sub_matrices(self, matrix, vertical_split, horizontal_split):
         if not isinstance(vertical_split, list) or not isinstance(horizontal_split, list):
@@ -26,12 +24,12 @@ class GreedyAlgo:
 
     def greedy_linear_applied(self, cost_matrices, num_of_matrices):
         total_mapping = []
-        for i in range(num_of_matrices):
-            rows = len(cost_matrices[i])
-            cols = len(cost_matrices[i][0])
+        for k in range(num_of_matrices):
+            rows = len(cost_matrices[k])
+            cols = len(cost_matrices[k][0])
             row_interval = [round(rows / 4), round(rows / 2), round(rows / 4) * 3]
             col_interval = [round(cols / 4), round(cols / 2), round(cols / 4) * 3]
-            sub_matrices = self.greedy_sub_matrices(cost_matrices[i], row_interval, col_interval)
+            sub_matrices = self.greedy_sub_matrices(cost_matrices[k], row_interval, col_interval)
 
             mapping_row = []
             mapping_col = []
@@ -58,7 +56,7 @@ class GreedyAlgo:
 if __name__ == '__main__':
     matrix_reader = MatrixReader()
     applied_liner_sum = OptimizeAlgoApplied()
-    greedy_algo = GreedyAlgo(OptimizeAlgoApplied)
+    greedy_algo = GreedyAlgo(applied_liner_sum)
 
     num_of_matrix = 0
 
@@ -67,15 +65,15 @@ if __name__ == '__main__':
     num_cost_matrices = len(list(combinations(range(len_dataset), r=2)))
     print(f'Number of cost matrices: {num_cost_matrices}')
 
-    cost_matrices = matrix_reader.load_h5_file('../data/cost_matrices.h5', num_cost_matrices)
+    cost_matrices = matrix_reader.load_h5_file('./data/cost_matrices.h5', num_cost_matrices)
 
-    total_mapping = greedy_algo.greedy_linear_applied(cost_matrices, num_of_matrix)
+    total_mapping = greedy_algo.greedy_linear_applied(cost_matrices, num_cost_matrices)
 
-    with h5py.File('test.h5', 'w') as file:
+    with h5py.File('./data/GreedyAlgo.h5', 'w') as file:
         for i in range(num_cost_matrices):
             file.create_dataset(f'matrix_mapping{i}', data=total_mapping[i])
         file.close()
-    with h5py.File('test.h5', 'r') as file:
+    with h5py.File('./data/GreedyAlgo.h5', 'r') as file:
         test_mapping = {i: np.array(file[f'matrix_mapping{i}']) for i in range(num_cost_matrices)}
         file.close()
 

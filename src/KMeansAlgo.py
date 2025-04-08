@@ -2,7 +2,7 @@ import numpy as np
 from itertools import combinations
 from sklearn.cluster import KMeans
 from src.MatrixReader import MatrixReader
-from src.optimize.OptimizeAlgoApplied import OptimizeAlgoApplied
+from src.OptimizeAlgoApplied import OptimizeAlgoApplied
 from itertools import chain
 import h5py
 
@@ -71,7 +71,7 @@ if __name__ == '__main__':
 
     print(f'Number of cost matrices: {num_cost_matrices}')
 
-    cost_matrices = matrix_reader.load_h5_file('./src/data/cost_matrices.h5', num_cost_matrices)
+    cost_matrices = matrix_reader.load_h5_file('./data/cost_matrices.h5', num_cost_matrices)
 
     total_mapping = []
 
@@ -91,11 +91,11 @@ if __name__ == '__main__':
         mapping = [list(chain(*complete_row_mapping)), list(chain(*complete_col_mapping))]
         total_mapping.append(mapping)
 
-    with h5py.File('test.h5', 'w') as file:
+    with h5py.File('./data/KmeansAlgoMapping.h5', 'w') as file:
         for i in range(num_cost_matrices):
             file.create_dataset(f'matrix_mapping{i}', data=total_mapping[i])
         file.close()
-    with h5py.File('test.h5', 'r') as file:
+    with h5py.File('./data/KmeansAlgoMapping.h5', 'r') as file:
         test_mapping = {i: np.array(file[f'matrix_mapping{i}']) for i in range(num_cost_matrices)}
         file.close()
 
