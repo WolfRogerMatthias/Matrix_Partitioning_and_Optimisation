@@ -9,7 +9,7 @@ if __name__ == '__main__':
     MockDataGenerator = MockDataGenerator()
     OptimizeAlgoApplied = OptimizeAlgoApplied()
     GreedyAlgo = GreedyAlgo(OptimizeAlgoApplied)
-
+    """
     matrix_sizes = [10, 20, 40, 60, 80, 100]
     number_of_matrices = 10000
 
@@ -33,3 +33,27 @@ if __name__ == '__main__':
     #plt.ylim(min(execution_times_linear + execution_times_greedy), max(execution_times_linear + execution_times_greedy))
     plt.savefig(f'./png/mock_data_together.png', format='png')
     plt.show()
+    """
+
+    matrix_sizes = [i for i in range(10, 41, 10)]
+    num_of_matrices = 10000
+
+    execution_times_linear = []
+
+    print(matrix_sizes)
+    for matrix_size in matrix_sizes:
+        filepath = f'./data/mock_data_{matrix_size}.h5'
+        MockDataGenerator.creating_mock_data(filepath, num_of_matrices, matrix_size)
+        cost_matrices = MockDataGenerator.loadig_mock_data(filepath, num_of_matrices)
+        execution_time_linear = timeit.timeit('[OptimizeAlgoApplied.compute_linear_sum_assignment(cost_matrices[i]) for i in range(num_of_matrices)]', globals=globals(), number=1)
+        execution_times_linear.append(execution_time_linear)
+        os.remove(filepath)
+
+    plt.plot(matrix_sizes, execution_times_linear, color='red')
+    plt.xlim(min(matrix_sizes), max(matrix_sizes))
+    plt.savefig(f'./png/mock_data_linear_{num_of_matrices}_{matrix_sizes[-1]}.png', format='png')
+    plt.title('Linear Sum Assignment for matrix size 10000')
+    plt.xlabel('Matrix size')
+    plt.show()
+
+
