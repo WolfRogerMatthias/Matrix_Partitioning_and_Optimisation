@@ -15,7 +15,7 @@ if __name__ == '__main__':
     GreedyAlgoExtended = GreedyAlgoExtended(OptimizeAlgoApplied)
 
 
-    matrix_sizes = [i for i in range(10, 121, 5)]
+    matrix_sizes = [i for i in range(10, 91, 5)]
     num_of_matrices = 25000
 
     execution_times_linear = []
@@ -32,26 +32,26 @@ if __name__ == '__main__':
         execution_times_linear.append(execution_time_linear)
         execution_time_greedy = timeit.timeit('GreedyAlgo.greedy_linear_applied(cost_matrices, num_of_matrices)', globals=globals(), number=1)
         execution_times_greedy.append(execution_time_greedy)
-        execution_time_greedy_extended = timeit.timeit('GreedyAlgoExtended.greedy_linear_applied(cost_matrices, num_of_matrices)', globals=globals(), number=1)
-        execution_times_greedy_extended.append(execution_time_greedy_extended)
+        #execution_time_greedy_extended = timeit.timeit('GreedyAlgoExtended.greedy_linear_applied(cost_matrices, num_of_matrices)', globals=globals(), number=1)
+        #execution_times_greedy_extended.append(execution_time_greedy_extended)
         os.remove(filepath)
     end = time.time()
     print(f'Execution time: {end - start} seconds')
     plt.plot(matrix_sizes, execution_times_linear, color='red')
     plt.plot(matrix_sizes, execution_times_greedy, color='blue')
-    plt.plot(matrix_sizes, execution_times_greedy_extended, color='green')
+    #plt.plot(matrix_sizes, execution_times_greedy_extended, color='green')
     plt.xlim(min(matrix_sizes), max(matrix_sizes))
     plt.xticks(matrix_sizes, rotation=90)
     plt.title(f'For number of matrices {num_of_matrices}')
     plt.xlabel('Matrix size')
-    plt.legend(['Linear Sum Assignment', 'Greedy Assignment', 'Greedy Extended Assignment'])
-    plt.savefig(f'./png/mock_data_linear_vs_greedy_vs_extended_{num_of_matrices}_{matrix_sizes[-1]}.png', format='png')
+    plt.legend(['Linear Sum Assignment', 'Greedy Assignment'])
+    plt.savefig(f'./png/mock_data_linear_vs_greedy_{num_of_matrices}_{matrix_sizes[-1]}.png', format='png')
     plt.show()
 
-    with h5py.File(f'./data/timings_{num_of_matrices}_{matrix_sizes[-1]}.h5', 'w') as file:
+    with h5py.File(f'./data/timings_greedy_{num_of_matrices}_{matrix_sizes[-1]}.h5', 'w') as file:
         file.create_dataset('linear_sum_assignment_timing', data=execution_times_linear)
         file.create_dataset('greedy_sum_assignment_timing', data=execution_times_greedy)
-        file.create_dataset('greedy_extended_sum_assignment_timing', data=execution_times_greedy_extended)
+        #file.create_dataset('greedy_extended_sum_assignment_timing', data=execution_times_greedy_extended)
         file.create_dataset('matrix_sizes', data=matrix_sizes)
         file.close()
 
