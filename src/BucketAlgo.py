@@ -1,7 +1,7 @@
 
 import numpy as np
-from sklearn.cluster import KMeans
 from src.OptimizeAlgoApplied import OptimizeAlgoApplied
+from itertools import chain
 
 class BucketAlgo:
     def __init__(self, OptimizeAlgoApplied):
@@ -51,21 +51,41 @@ class BucketAlgo:
                 if count != len(range(min, max + 1)) and correct_mapping:
                     correct_mapping = False
 
-        print(mapping)
-        print(min_arg)
-        print(my_dict)
         sub_matrices = []
         mapping = np.array(mapping)
+        applied_mapping = []
         for key, (max, min, count) in my_dict.items():
             if (count == 0):
                 continue
-            print(key)
-            print(np.where(mapping == key)[0])
             row_ind = np.where(mapping == key)[0]
             sub_matrix = matrix[row_ind, :][:, min:max + 1]
+            applied_mapping.append(row_ind)
             sub_matrices.append(sub_matrix)
 
-        return sub_matrices
+        return sub_matrices, applied_mapping
+
+    def applied_mapping(self, matrices, numb_of_matrices):
+        total_mapping = []
+        number_of_buckets = 4
+        for i in range(numb_of_matrices):
+
+            sub_matrices, mapping = self.bucket_sub_matrices(matrices, number_of_buckets)
+            row_mapping = []
+            col_mapping = []
+            len_mappings = 0
+            for j in range(len(sub_matrices)):
+                row_ind, col_ind = self.OptimizeAlgoApplied.compute_linear_sum_assignment(sub_matrices[j])
+                if j >= 1:
+                    col_mapping.append(col_ind + len_mappings)
+                else:
+                    col_mapping.append(col_ind)
+                len_mappings += len(mapping[j])
+                row_mapping.append(mapping[j])
+
+            total_mapping.append([list(chain(*row_mapping)), list(chain(*col_mapping))])
+        return total_mapping
+
+
 
 
 
@@ -75,14 +95,22 @@ if __name__ == '__main__':
     BucketAlgo = BucketAlgo(OptimizeAlgoApplied)
 
     matrix = np.random.uniform(0, 20, size=(20, 20))
-    number_of_buckets = 4
+    number_of_matrices = 1
+
 
     for row in matrix:
         for element in row:
-            print(f'{element:6.2f} ', end='')
+            print(f'{element:6.2f}', end="")
         print()
 
-    sub_matrices = BucketAlgo.bucket_sub_matrices(matrix, number_of_buckets)
+    total_mapping = BucketAlgo.applied_mapping(matrix, number_of_matrices)
+
+    for i in total_mapping[0][0]:
+        print(f'{total_mapping[0][0][i]} -> {total_mapping[0][1][i]}')
+
+
+
+
     
 
 
