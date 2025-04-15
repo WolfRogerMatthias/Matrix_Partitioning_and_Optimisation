@@ -111,10 +111,11 @@ if __name__ == '__main__':
     """
 
     matrix_sizes = [i for i in range(250, 401, 10)]
-    num_of_matrices = 10
+    num_of_matrices = 100
 
     execution_times_linear = []
     execution_times_bucket = []
+    execution_times_greedy = []
 
     print(matrix_sizes)
 
@@ -133,6 +134,10 @@ if __name__ == '__main__':
             globals=globals(), number=1
         )
         execution_times_bucket.append(execution_time_bucket)
+        execution_time_greedy = timeit.timeit('GreedyAlgo.greedy_linear_applied(cost_matrices, num_of_matrices)',
+            globals=globals(), number=1
+        )
+        execution_times_greedy.append(execution_time_greedy)
         os.remove(
             filepath
         )
@@ -140,12 +145,13 @@ if __name__ == '__main__':
     print(f'Execution time: {end - start} seconds')
     plt.plot(matrix_sizes, execution_times_linear, color='red')
     plt.plot(matrix_sizes, execution_times_bucket, color='blue')
+    plt.plot(matrix_sizes, execution_times_greedy, color='green')
     plt.xlim(min(matrix_sizes), max(matrix_sizes))
     plt.xticks(matrix_sizes, rotation=90)
     plt.title(f'For number of matrices {num_of_matrices}')
     plt.xlabel('Matrix size')
-    plt.legend(['LSA', 'Bucket'])
-    plt.savefig(f'./png/bucket_5_vs_linear_{num_of_matrices}_{matrix_sizes[-1]}.png', format='png')
+    plt.legend(['LSA', 'Bucket', 'Greedy'])
+    plt.savefig(f'./png/bucket_5_vs_linear_vs_greedy_{num_of_matrices}_{matrix_sizes[-1]}.png', format='png')
     plt.show()
 
 
