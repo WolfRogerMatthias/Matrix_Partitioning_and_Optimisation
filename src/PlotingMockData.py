@@ -5,6 +5,7 @@ from src.GreedyAlgo import GreedyAlgo
 from src.GreedyAlgoExtended import GreedyAlgoExtended
 from src.GreedyAlgoDynamic import GreedyAlgoDynamic
 from src.GreedyAlgoDynamicExtended import GreedyAlgoDynamicExtended
+from src.BucketAlgo import BucketAlgo
 import numpy as np
 import os
 import timeit
@@ -18,6 +19,7 @@ if __name__ == '__main__':
     GreedyAlgoExtended = GreedyAlgoExtended(OptimizeAlgoApplied)
     GreedyAlgoDynamic = GreedyAlgoDynamic(OptimizeAlgoApplied)
     GreedyAlgoDynamicExtended = GreedyAlgoDynamicExtended(OptimizeAlgoApplied)
+    BucketAlgo = BucketAlgo(OptimizeAlgoApplied)
 
     """
     matrix_sizes = [i for i in range(10, 91, 5)]
@@ -61,6 +63,7 @@ if __name__ == '__main__':
         file.close()
 
     """
+    """    
     matrix_sizes = [i for i in range(10, 121, 10)]
     num_of_matrices = 25000
     execution_times_linear = []
@@ -104,6 +107,47 @@ if __name__ == '__main__':
     plt.legend(['Linear Sum Assignment', 'Greedy Assignment', 'Greedy Dynamic Assignment', 'Greedy Extended Assignment', 'Greedy Dynamic Extended Assignment'])
     plt.savefig(f'./png/dynamic_{num_of_matrices}_{matrix_sizes[-1]}.png', format='png')
     plt.show()
+
+    """
+
+    matrix_sizes = [i for i in range(250, 401, 10)]
+    num_of_matrices = 10
+
+    execution_times_linear = []
+    execution_times_bucket = []
+
+    print(matrix_sizes)
+
+    start = time.time()
+    for matrix_size in matrix_sizes:
+        print(f'Run of matrix_size {matrix_size}')
+        filepath = f'./data/mock_data_{matrix_size}.h5'
+        MockDataGenerator.creating_mock_data(filepath, num_of_matrices, matrix_size)
+        cost_matrices = MockDataGenerator.loadig_mock_data(filepath, num_of_matrices)
+        execution_time_linear = timeit.timeit(
+            '[OptimizeAlgoApplied.compute_linear_sum_assignment(cost_matrices[i]) for i in range(num_of_matrices)]',
+            globals=globals(), number=1)
+        execution_times_linear.append(execution_time_linear)
+        execution_time_bucket = timeit.timeit(
+            'BucketAlgo.applied_mapping(cost_matrices, num_of_matrices)',
+            globals=globals(), number=1
+        )
+        execution_times_bucket.append(execution_time_bucket)
+        os.remove(
+            filepath
+        )
+    end = time.time()
+    print(f'Execution time: {end - start} seconds')
+    plt.plot(matrix_sizes, execution_times_linear, color='red')
+    plt.plot(matrix_sizes, execution_times_bucket, color='blue')
+    plt.xlim(min(matrix_sizes), max(matrix_sizes))
+    plt.xticks(matrix_sizes, rotation=90)
+    plt.title(f'For number of matrices {num_of_matrices}')
+    plt.xlabel('Matrix size')
+    plt.legend(['LSA', 'Bucket'])
+    plt.savefig(f'./png/bucket_5_vs_linear_{num_of_matrices}_{matrix_sizes[-1]}.png', format='png')
+    plt.show()
+
 
 
 

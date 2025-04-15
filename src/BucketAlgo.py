@@ -10,7 +10,7 @@ class BucketAlgo:
     def bucket_sub_matrices(self, matrix, number_of_buckets):
         rows, cols = matrix.shape
         min_arg = np.argmin(matrix, axis=1)
-        bucket_with = cols // number_of_buckets
+        bucket_with = cols / number_of_buckets
         my_dict = {i: (0, np.inf, 0) for i in range(number_of_buckets)}
         for element in min_arg:
             index = element // bucket_with
@@ -66,10 +66,10 @@ class BucketAlgo:
 
     def applied_mapping(self, matrices, numb_of_matrices):
         total_mapping = []
-        number_of_buckets = 4
+        number_of_buckets = 5
         for i in range(numb_of_matrices):
 
-            sub_matrices, mapping = self.bucket_sub_matrices(matrices, number_of_buckets)
+            sub_matrices, mapping = self.bucket_sub_matrices(matrices[i], number_of_buckets)
             row_mapping = []
             col_mapping = []
             len_mappings = 0
