@@ -23,8 +23,8 @@ class BucketAlgo:
         correct_mapping = False
         counter = 0
         mapping = []
-        while not correct_mapping and counter < 10:
-            mapping.clear()
+        while not correct_mapping:
+            mapping = []
             counter += 1
             counts = []
             last_max = -1

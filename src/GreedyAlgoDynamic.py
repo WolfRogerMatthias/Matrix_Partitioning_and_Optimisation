@@ -21,13 +21,13 @@ class GreedyAlgoDynamic():
 
         return sub_matrices
 
-    def greedy_linear_applied(self, cost_matrices, num_of_matrices):
+    def greedy_linear_applied(self, cost_matrices, num_of_matrices, size):
         total_mapping = []
         for k in range(num_of_matrices):
             rows = len(cost_matrices[k])
             cols = len(cost_matrices[k][0])
 
-            divisor = math.ceil(rows / 42)
+            divisor = math.ceil(rows / size)
             row_interval = [round(rows * i / divisor) for i in range(1, divisor)]
             col_interval = [round(cols * i / divisor) for i in range(1, divisor)]
             sub_matrices = self.greedy_dynamic_sub_matrix(cost_matrices[k], row_interval, col_interval)

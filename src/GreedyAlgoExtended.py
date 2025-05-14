@@ -32,24 +32,22 @@ class GreedyAlgoExtended:
         for k in range(num_of_matrices):
             rows = len(cost_matrices[k])
             cols = len(cost_matrices[k][0])
-            row_interval = [round(rows / 4), round(rows / 2), round(rows / 4) * 3]
-            col_interval = [round(cols / 4), round(cols / 2), round(cols / 4) * 3]
+            row_interval = [round(rows / 5), round(rows * 2 / 5), round(rows * 3/ 5), round(rows * 4 / 5)]
+            col_interval = [round(cols / 5), round(cols * 2 / 5), round(cols * 3/ 5), round(cols * 4 / 5)]
             sub_matrices, mapping = self.greedy_extended_sub_matrices(cost_matrices[k], row_interval, col_interval)
 
             mapping_row = []
             mapping_col = []
-            for j in range(len(sub_matrices)):
-                row, col = self.OptimizeAlgoApplied.compute_linear_sum_assignment(sub_matrices[j])
-                mapping_row.append(row)
-                mapping_col.append(col)
-
             complete_row_mapping = []
             complete_col_mapping = []
             row_interval.insert(0, 0)
             col_interval.insert(0, 0)
-            for j in range(len(mapping_row)):
-                complete_row_mapping.append(mapping_row[j] + row_interval[mapping[0][j]])
-                complete_col_mapping.append(mapping_col[j] + col_interval[mapping[1][j]])
+            for j in range(len(sub_matrices)):
+                row, col = self.OptimizeAlgoApplied.compute_linear_sum_assignment(sub_matrices[j])
+                mapping_row.append(row)
+                mapping_col.append(col)
+                complete_row_mapping.append(row + row_interval[mapping[0][j]])
+                complete_col_mapping.append(col + col_interval[mapping[1][j]])
 
             total_mapping.append([list(chain(*complete_row_mapping)), list(chain(*complete_col_mapping))])
         return total_mapping
