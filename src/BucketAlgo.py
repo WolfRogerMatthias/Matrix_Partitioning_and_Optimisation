@@ -1,7 +1,7 @@
-
 import numpy as np
 from src.OptimizeAlgoApplied import OptimizeAlgoApplied
 from itertools import chain
+from src.MockDataGenerator import MockDataGenerator
 
 class BucketAlgo:
     def __init__(self, OptimizeAlgoApplied):
@@ -82,7 +82,8 @@ class BucketAlgo:
                 len_mappings += len(mapping[j])
                 row_mapping.append(mapping[j])
 
-            total_mapping.append([list(chain(*row_mapping)), list(chain(*col_mapping))])
+            total_mapping.append(sorted(list(zip(list(chain(*row_mapping)), list(chain(*col_mapping)))), key=lambda x: x[0]))
+
         return total_mapping
 
 
@@ -93,20 +94,20 @@ class BucketAlgo:
 if __name__ == '__main__':
     OptimizeAlgoApplied = OptimizeAlgoApplied()
     BucketAlgo = BucketAlgo(OptimizeAlgoApplied)
+    MockDataGenerator = MockDataGenerator()
 
-    matrix = np.random.uniform(0, 20, size=(20, 20))
+    matrix = MockDataGenerator.loadig_mock_data('./data/cost_matrices_100/cost_matrices_20.h5', 1)
     number_of_matrices = 1
 
 
-    for row in matrix:
+    for row in matrix[0]:
         for element in row:
             print(f'{element:6.2f}', end="")
         print()
 
     total_mapping = BucketAlgo.applied_mapping(matrix, number_of_matrices)
-
-    for i in total_mapping[0][0]:
-        print(f'{total_mapping[0][0][i]} -> {total_mapping[0][1][i]}')
+    for i in range(len(total_mapping[0])):
+        print(f'{total_mapping[0][i][0]} -> {total_mapping[0][i][1]}')
 
 
 
