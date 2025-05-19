@@ -24,8 +24,8 @@ GreedyAlgoDynamic = GreedyAlgoDynamic(OptimizeAlgoApplied)
 BucketAlgo = BucketAlgo(OptimizeAlgoApplied)
 
 
-matrix_sizes = [i for i in range(10, 121, 5)]
-number_of_matrices_ = [100]
+matrix_sizes = [i for i in range(600, 1201, 40)]
+number_of_matrices_ = [500]
 
 
 linear_timings = []
@@ -107,28 +107,28 @@ for j in range(len(number_of_matrices_)):
 """
 for j in range(len(number_of_matrices_)):
     fig, axis = plt.subplots()
-    positions_linear = [matrix_sizes[i] - .5 for i in range(len(matrix_sizes))]
+    positions_linear = [matrix_sizes[i] - 5 for i in range(len(matrix_sizes))]
     positions_greedy = [matrix_sizes[i] for i in range(len(matrix_sizes))]
-    positions_bucket = [matrix_sizes[i] + .5 for i in range(len(matrix_sizes))]
+    positions_bucket = [matrix_sizes[i] + 5 for i in range(len(matrix_sizes))]
 
-
+    """
     # Boxplot for Greedy
     box_greedy = axis.boxplot(
         [min_cost_greedy[i] for i in range(len(matrix_sizes))],
         positions=positions_greedy,
-        widths=1,
+        widths=10,
         patch_artist=True,
         boxprops=dict(facecolor='blue', color='blue'),
         medianprops=dict(color='black'),
         flierprops=dict(marker='o', markerfacecolor='black', markersize=2, linestyle='none')
     )
-
+    """
 
     # Boxplot for Linear
     box_linear = axis.boxplot(
         [min_cost_linear[i] for i in range(len(matrix_sizes))],
         positions=positions_linear,
-        widths=1,
+        widths=10,
         patch_artist=True,
         boxprops=dict(facecolor='red', color='red'),
         medianprops=dict(color='black'),
@@ -138,17 +138,17 @@ for j in range(len(number_of_matrices_)):
     box_bucket = axis.boxplot(
         [min_cost_bucket[i] for i in range(len(matrix_sizes))],
         positions=positions_bucket,
-        widths=1,
+        widths=10,
         patch_artist=True,
         boxprops=dict(facecolor='orange', color='orange'),
         medianprops=dict(color='black'),
         flierprops=dict(marker='o', markerfacecolor='black', markersize=2, linestyle='none')
     )
 
-    plt.legend([box_linear["boxes"][0],box_greedy["boxes"][0], box_bucket["boxes"][0]], ['Linear','Greedy', 'Bucket'], loc='upper left')
+    plt.legend([box_linear["boxes"][0], box_bucket["boxes"][0]], ['Linear', 'Bucket'], loc='upper left')
     plt.ylabel('Minimal Sum')
     plt.xlabel('Size of (n x n) matrix')
-    plt.xticks(matrix_sizes, rotation=90)
+    plt.xticks(matrix_sizes, labels=matrix_sizes, rotation=90)
 
     timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
     plt.title(f'Iterate over {number_of_matrices_[j]} matrices')
@@ -161,10 +161,10 @@ for j in range(len(number_of_matrices_)):
     fig, axis = plt.subplots()
 
     axis.plot(matrix_sizes, linear_timings[len(matrix_sizes)*j:len(matrix_sizes)*(j + 1)], color='red')
-    axis.plot(matrix_sizes, greedy_timings[len(matrix_sizes)*j:len(matrix_sizes)*(j + 1)], color='blue')
+    #axis.plot(matrix_sizes, greedy_timings[len(matrix_sizes)*j:len(matrix_sizes)*(j + 1)], color='blue')
     axis.plot(matrix_sizes, bucket_timings[len(matrix_sizes)*j:len(matrix_sizes)*(j + 1)], color='orange')
 
-    plt.legend(['Linear', 'Greedy', 'Bucket'])
+    plt.legend(['Linear', 'Bucket'])
     plt.ylabel('Time elapsed in s')
     plt.xlabel('Size of (n x n) matrix')
     plt.xticks(matrix_sizes, rotation=90)
