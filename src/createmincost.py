@@ -24,8 +24,8 @@ GreedyAlgoDynamic = GreedyAlgoDynamic(OptimizeAlgoApplied)
 BucketAlgo = BucketAlgo(OptimizeAlgoApplied)
 
 
-matrix_sizes = [i for i in range(600, 1201, 40)]
-number_of_matrices_ = [500]
+matrix_sizes = [i for i in range(700, 1101, 20)]
+number_of_matrices_ = [1000]
 
 
 linear_timings = []
