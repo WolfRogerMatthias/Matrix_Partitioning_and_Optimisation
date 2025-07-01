@@ -1,16 +1,25 @@
 from src.MockDataGenerator import MockDataGenerator
-
-"""
-Creating my Mock data set for the timing analyzation and the accuracy
-The total size of these creation is approximate 40GB
-"""
+import time
 
 MockDataGenerator = MockDataGenerator()
 
-matrix_sizes = [i for i in range(10, 126, 5)]
-number_of_matrices_ = [100, 1000, 10000, 25000]
+matrix_sizes = [i for i in range(245, 251, 5)]
 
-for number_of_matrices in number_of_matrices_:
-    for matrix_size in matrix_sizes:
-        MockDataGenerator.creating_mock_data(f'./data/cost_matrices_{number_of_matrices}/cost_matrices_{matrix_size}.h5', number_of_matrices, matrix_size)
+
+for matrix_size in matrix_sizes:
+    start = time.time()
+    MockDataGenerator.creating_mock_data(
+        f'./data/cost_matrices/cost_matrices_{matrix_size}.h5',
+        1000, matrix_size)
+    end = time.time()
+    print(f'End of matrix size {matrix_size}. Time elapsed: {end - start}')
+
+
+
+for matrix_size in matrix_sizes:
+    start = time.time()
+    filepath = f'./data/cost_matrices_asymmetric/cost_matrices_asymmetric_{matrix_size}.h5'
+    MockDataGenerator.creating_asymmetric_mock_data(filepath, 1000, matrix_size)
+    end = time.time()
+    print(f'End of matrix size {matrix_size}. Time elapsed: {end - start}')
 
