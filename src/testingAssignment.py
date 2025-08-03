@@ -13,7 +13,7 @@ OptimizeAlgoApplied = OptimizeAlgoApplied()
 AssignmentAlgo = AssignmentAlgo()
 
 number_of_matrices = 100
-matrix_sizes = [i for i in range(150, 251, 5)]
+matrix_sizes = [i for i in range(50, 151, 5)]
 number_of_runs = 5
 
 lsa_timings = []
