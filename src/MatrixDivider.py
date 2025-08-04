@@ -10,53 +10,55 @@ class MatrixDivider:
     def divider(self, matrix, number_of_matrices, n):
         total_mapping = []
         for k in range(number_of_matrices):
-            rows, cols = matrix[k].shape  # Get rows and columns separately
+            rows, cols = matrix[k].shape
 
-            # Row splits
+            # Calculate row split points
             base_row_size = rows // n
             remainder_row = rows % n
             row_sizes = np.full(n, base_row_size, dtype=int)
             row_sizes[:remainder_row] += 1
-            row_split_points = np.cumsum(row_sizes)[:-1]
+            # row_split_points = np.cumsum(row_sizes)[:-1] # Not strictly needed if iterating with start/end
 
-            # Column splits (independent of row)
+            # Calculate column split points
             base_col_size = cols // n
             remainder_col = cols % n
             col_sizes = np.full(n, base_col_size, dtype=int)
             col_sizes[:remainder_col] += 1
-            col_split_points = np.cumsum(col_sizes)[:-1]
+            # col_split_points = np.cumsum(col_sizes)[:-1] # Not strictly needed if iterating with start/end
 
             row_mapping = []
             col_mapping = []
 
-            row_start = 0
-            for idx, row_size in enumerate(row_sizes):
-                row_end = row_start + row_size
+            row_start_current = 0
+            col_start_current = 0  # Initialize outside the inner loop
 
-                col_start = 0
-                for jdx, col_size in enumerate(col_sizes):
-                    col_end = col_start + col_size
+            for idx in range(n):  # Iterate through diagonal blocks
+                # Determine current row block boundaries
+                row_size = row_sizes[idx]
+                row_end_current = row_start_current + row_size
 
-                    if idx == jdx:  # Only process diagonal blocks
-                        block = matrix[k][row_start:row_end, col_start:col_end]
-                        #print(f"Block shape: {block.shape}")
-                        row, col = linear_sum_assignment(block)
+                # Determine current column block boundaries (same index for diagonal)
+                col_size = col_sizes[idx]
+                col_end_current = col_start_current + col_size
 
-                        # Compute row/col offset correctly from split points
-                        if idx == 0:
-                            row_mapping.append(row)
-                            col_mapping.append(col)
-                        else:
-                            row_offset = row_split_points[idx - 1]
-                            col_offset = col_split_points[jdx - 1]
-                            row_mapping.append(row + row_offset)
-                            col_mapping.append(col + col_offset)
+                # Extract the diagonal block using direct slicing (creates a view, no copy)
+                block = matrix[k][
+                    row_start_current:row_end_current,
+                    col_start_current:col_end_current,
+                ]
 
-                    col_start = col_end
-                row_start = row_end
+                # Perform Linear Sum Assignment
+                row_ind, col_ind = linear_sum_assignment(block)
 
-            total_mapping.append([
-                np.concatenate(row_mapping).tolist(),
-                np.concatenate(col_mapping).tolist()
-            ])
+                # Adjust indices with offset
+                row_mapping.append(row_ind + row_start_current)
+                col_mapping.append(col_ind + col_start_current)
+
+                # Update start points for the next iteration
+                row_start_current = row_end_current
+                col_start_current = col_end_current
+
+            total_mapping.append(
+                [np.concatenate(row_mapping).tolist(), np.concatenate(col_mapping).tolist()]
+            )
         return total_mapping
