@@ -20,13 +20,8 @@ class MockDataGenerator:
         with h5py.File(filepath, 'w') as file:
             for i in range(num_of_matrices):
                 rows = matrix_size
-                cols = matrix_size + np.random.randint(1, matrix_size)
+                cols = matrix_size + np.random.randint(1,  matrix_size // 2)
                 # print(f'rows: {rows}, cols: {cols}, test: {rows < cols}')
                 matrix = np.random.uniform(0.1,2,size=(rows, cols))
                 file.create_dataset(f'cost_matrix_{i}', data=matrix)
             file.close()
-
-
-
-if __name__ == '__main__':
-    MockDataGenerator = MockDataGenerator()

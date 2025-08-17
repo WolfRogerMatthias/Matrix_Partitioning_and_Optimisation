@@ -28,8 +28,8 @@ MatrixDivider = MatrixDivider()
 ParallelBucketAssignmentSolver = ParallelBucketAssignmentSolver()
 AssignmentAlgo = AssignmentAlgo()
 
-matrix_sizes = [i for i in range(100, 401, 20)]
-number_of_matrices = 250
+matrix_sizes = [10] + list(range(25, 1001, 25))
+number_of_matrices = 100
 number_of_runs = 10
 
 lsa_timings = []
@@ -40,35 +40,41 @@ min_timings = []
 total_time = time.time()
 for i in range(number_of_runs):
     run_start = time.time()
-    print(f"Run {i + 1} start", end='')
+    print(f"Run {i + 1} start", end=' ')
     lsa_timings_run = []
     divider_timings_run = []
     bucket_timings_run = []
     min_timings_run = []
     for matrix_size in matrix_sizes:
+        start_size = time.time()
         cost_matrices = MockDataGenerator.load_h5_file(f'./data/cost_matrices/cost_matrices_{matrix_size}.h5',
                                                        number_of_matrices)
         lsa_start = time.time()
         lsa_mapping = [OptimizeAlgoApplied.compute_linear_sum_assignment(cost_matrices[i]) for i in
                        range(number_of_matrices)]
         lsa_end = time.time()
-
+        # print(f' {lsa_end - lsa_start:6.2f} ', end='')
         divider_start = time.time()
-        # divider_mapping = MatrixDivider.divider(cost_matrices, number_of_matrices, 4)
+        divider_mapping = MatrixDivider.divider(cost_matrices, number_of_matrices, 4)
         divider_end = time.time()
-
+        # print(f' {divider_end - divider_start:6.2f} ', end='')
         bucket_start = time.time()
         bucket_mapping = ParallelBucketAssignmentSolver.solve_multiple(cost_matrices, 2)
         bucket_end = time.time()
+        # print(f' {bucket_end - bucket_start:6.2f} ', end='')
 
         min_start = time.time()
-        # min_mapping = [AssignmentAlgo.assignment_applied(cost_matrices[i]) for i in range(number_of_matrices)]
+        min_mapping = [AssignmentAlgo.assignment_applied(cost_matrices[i]) for i in range(number_of_matrices)]
         min_end = time.time()
+        # print(f' {min_end - min_start:6.2f} ', end='')
 
         lsa_timings_run.append(lsa_end - lsa_start)
         divider_timings_run.append(divider_end - divider_start)
         bucket_timings_run.append(bucket_end - bucket_start)
         min_timings_run.append(min_end - min_start)
+        end_size = time.time()
+        if matrix_size % 100 == 0:
+            print(f'{matrix_size} run {end_size - start_size:4.2f} ', end='')
     lsa_timings.append(lsa_timings_run)
     divider_timings.append(divider_timings_run)
     bucket_timings.append(bucket_timings_run)
@@ -122,14 +128,14 @@ plt.ylabel('Time (seconds)')
 plt.title('LSA vs Matrix Divider - Runtime Comparison')
 plt.legend()
 plt.xticks([i for i in range(10, 81, 5)])
-plt.ylim(0, lsa_timings[0][15])
-plt.xlim(10, 81)
+plt.ylim(0, lsa_timings[0][-1])
+plt.xlim(10, 80)
 plt.grid(True)
 plt.tight_layout()
 
 plt.savefig(f'./png/{timestamp}_lsa_vs_matrix_divider_timing.png')
 plt.show()
-"""
+
 # Plot 2
 
 plt.figure(figsize=(10, 6))
@@ -144,16 +150,16 @@ plt.xlabel('Matrix Size (NxN)')
 plt.ylabel('Time (seconds)')
 plt.title('LSA vs Bucket Mapping - Runtime Comparison')
 plt.legend()
-plt.xticks([i for i in range(100, 401, 20)])
+plt.xticks([i for i in range(100, 401, 40)])
 plt.ylim(0, None)
-plt.xlim(100, 401)
+plt.xlim(100, 400)
 plt.grid(True)
 plt.tight_layout()
 
 plt.savefig(f'./png/{timestamp}_lsa_vs_bucket_mapping_timing.png')
 plt.show()
 
-"""
+
 # Plot 3
 plt.figure(figsize=(10, 6))
 plt.plot(matrix_sizes, lsa_mean, label='LSA (Average)', color=colors['baseline'], linewidth=2)
@@ -175,6 +181,7 @@ plt.tight_layout()
 
 plt.savefig(f'./png/{timestamp}_lsa_vs_min_assignment_timing.png')
 plt.show()
+"""
 
 # Plot 4
 plt.figure(figsize=(10, 6))
@@ -197,12 +204,11 @@ plt.xlabel('Matrix Size (NxN)')
 plt.ylabel('Time (seconds)')
 plt.title('LSA vs Matrix Divider vs Min Assignment - Runtime Comparison')
 plt.legend()
-plt.xticks([i for i in range(10, 151, 5)])
+plt.xticks([i for i in range(0, 1001, 50)])
 plt.ylim(0, None)
-plt.xlim(10, 150)
+plt.xlim(matrix_sizes[0], matrix_sizes[-1])
 plt.grid(True)
 plt.tight_layout()
 
 plt.savefig(f'./png/{timestamp}_lsa_vs_algo_timings.png')
 plt.show()
-"""
