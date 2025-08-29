@@ -18,9 +18,9 @@ from pandastable import Table
 from itertools import combinations
 from src.OptimizeAlgoApplied import OptimizeAlgoApplied
 from src.AssignmentAlgo import AssignmentAlgo
-from src.BucketAlgo import BucketAlgo
 from src.MockDataGenerator import MockDataGenerator
 from src.ParallelBucketAssignmentSolver import ParallelBucketAssignmentSolver
+from src.MatrixDivider import MatrixDivider
 
 # init
 
@@ -141,23 +141,24 @@ for i in range(runs):
 data = {
     "LSA": {
         "Mutag": lsa_timing_mutag,
+        "Proteins": lsa_timing_proteins,
         "OHSU": lsa_timing_ohsu,
-        "Proteins": lsa_timing_proteins
     },
     "Divider": {
         "Mutag": divider_timing_mutag,
+        "Proteins": divider_timing_proteins,
         "OHSU": divider_timing_ohsu,
-        "Proteins": divider_timing_proteins
+
     },
     "Bucket": {
         "Mutag": bucket_timing_mutag,
+        "Proteins": bucket_timing_proteins,
         "OHSU": bucket_timing_ohsu,
-        "Proteins": bucket_timing_proteins
     },
     "Direct": {
         "Mutag": direct_timing_mutag,
+        "Proteins": direct_timing_proteins,
         "OHSU": direct_timing_ohsu,
-        "Proteins": direct_timing_proteins
     }
 }
 
@@ -169,17 +170,9 @@ for algo, datasets in data.items():
         timings_np = np.array(timings)
         row[f"{ds_name}_mean"] = timings_np.mean()
         row[f"{ds_name}_std"] = timings_np.std(ddof=1)  # sample std
-        row[f"{ds_name}_min"] = timings_np.min()
-        row[f"{ds_name}_max"] = timings_np.max()
     rows.append(row)
 
 df = pd.DataFrame(rows)
-
-# Add speedup & relative runtime compared to LSA
-for ds_name in ["Mutag", "OHSU", "Proteins"]:
-    lsa_mean = df.loc[df["Algorithm"] == "LSA", f"{ds_name}_mean"].values[0]
-    df[f"{ds_name}_speedup_vs_LSA"] = lsa_mean / df[f"{ds_name}_mean"]
-    df[f"{ds_name}_runtime_pct_vs_LSA"] = df[f"{ds_name}_mean"] / lsa_mean
 
 timestamp = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
 df.to_csv(f"./png/{timestamp}_timing_results.csv", index=False)

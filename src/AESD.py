@@ -302,7 +302,6 @@ for idx, size in enumerate(selected_sizes_bucket):
     min_val = min(min(lsa_sums), min(bucket_sums))
     max_val = max(max(lsa_sums), max(bucket_sums))
     ax.plot([min_val, max_val], [min_val, max_val], 'r--', lw=1)
-
     ax.set_title(f"Size {size}\nR²={r2:.3f}, RelErr={rel_err:.2%} ± {std_err:.2%}, F1={mean_f1:.3f}")
     ax.set_xlabel("LSA minimal sum", color=colors['lsa'])
     ax.set_ylabel("Bucket minimal sum", color=colors['bucket'])
