@@ -164,15 +164,31 @@ mean_gap = np.mean(data['cost_gap'], axis=1)
 std_gap = np.std(data['cost_gap'], axis=1)
 
 plt.figure(figsize=(8, 6))
-plt.plot(matrix_sizes, mean_gap, label='Mean Cost Gap', color=colors['bucket'])
+plt.plot(matrix_sizes, mean_gap, label='Mean Cost Gap (Approx. Ratio − 1)', color=colors['bucket'])
 plt.fill_between(matrix_sizes, mean_gap - std_gap, mean_gap + std_gap, alpha=0.2, color=colors['bucket'])
 plt.xlabel('Matrix Size')
-plt.ylabel('Cost Gap')
+plt.ylabel('Cost Gap (Approx. Ratio − 1)')
+plt.title('Cost Gap of Bucket Algorithm')
 plt.xticks(matrix_sizes)
 plt.ylim(0, None)
 plt.xlim(matrix_sizes[0], matrix_sizes[-1])
-plt.title('Cost Gap of Bucket Algorithm')
 plt.grid(True)
 plt.legend()
 plt.savefig(f'./png/{timestamp}_cost_gap_bucket.png')
 plt.show()
+
+
+
+results_df = pd.DataFrame({
+    "matrix_size": matrix_sizes,
+    "mean_accuracy": mean_acc,
+    "std_accuracy": std_acc,
+    "mean_cost_gap": mean_gap,
+    "std_cost_gap": std_gap
+})
+
+results_csv_path = f'./csv/{timestamp}_evaluation_results_bucket.csv'
+results_df.to_csv(results_csv_path, index=False)
+
+print(f"Results saved to {results_csv_path}")
+print(results_df.head())
