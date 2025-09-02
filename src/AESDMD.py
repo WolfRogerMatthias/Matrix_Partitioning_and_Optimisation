@@ -171,17 +171,3 @@ plt.grid(True)
 plt.legend()
 plt.savefig(f'./png/{timestamp}_cost_gap_divider.png')
 plt.show()
-
-results_df = pd.DataFrame({
-    "matrix_size": matrix_sizes,
-    "mean_accuracy": mean_acc,
-    "std_accuracy": std_acc,
-    "mean_cost_gap": mean_gap,
-    "std_cost_gap": std_gap
-})
-
-results_csv_path = f'./csv/{timestamp}_evaluation_results_divider.csv'
-results_df.to_csv(results_csv_path, index=False)
-
-print(f"Results saved to {results_csv_path}")
-print(results_df.head())

@@ -7,7 +7,6 @@ import datetime
 import time
 import os
 
-
 import matplotlib.pyplot as plt
 import seaborn as sns
 import pandas as pd
@@ -21,17 +20,19 @@ from src.AssignmentAlgo import AssignmentAlgo
 from src.MatrixDivider import MatrixDivider
 from src.MockDataGenerator import MockDataGenerator
 from src.ParallelBucketAssignmentSolver import ParallelBucketAssignmentSolver
-from scipy.stats import spearmanr, kendalltau
-from sklearn.metrics import r2_score
 
 # init
 
 timestamp = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
 colors = {
-    'lsa': '#333333',  # Black
-    'divider': '#FF8C00',  # Orange
-    'bucket': '#800080',  # Purple
-    'direct': '#0000FF'  # Blue
+    'Matrix Divider': '#FF8C00',  # Orange
+    'Bucket': '#800080',          # Purple
+    'Direct': '#0000FF'           # Blue
+}
+ALGO_NAME_MAP = {
+    'divider': 'Matrix Divider',
+    'bucket': 'Bucket',
+    'direct': 'Direct'
 }
 
 len_mutag = 188
@@ -47,10 +48,14 @@ AssignmentAlgo = AssignmentAlgo()
 MatrixDivider = MatrixDivider()
 ParallelBucketAssignmentSolver = ParallelBucketAssignmentSolver()
 
+start = time.time()
 cost_matrices_mutag = MockDataGenerator.load_h5_file('./data/cost_matrices.h5', number_of_matrices_mutag)
 cost_matrices_ohsu = MockDataGenerator.load_h5_file('./data/cost_matrices_OHSU.h5', number_of_matrices_ohsu)
 cost_matrices_proteins = MockDataGenerator.load_h5_file('./data/cost_matrices_PROTEINS_subset.h5',
                                                         number_of_matrices_proteins)
+
+print(f'Loading of Datasets done time:{time.time() - start:6.2f}')
+start = time.time()
 
 lsa_mapping_mutag = [OptimizeAlgoApplied.compute_linear_sum_assignment(cost_matrices_mutag[j]) for j in
                      range(number_of_matrices_mutag)]
@@ -59,13 +64,22 @@ lsa_mapping_ohsu = [OptimizeAlgoApplied.compute_linear_sum_assignment(cost_matri
 lsa_mapping_proteins = [OptimizeAlgoApplied.compute_linear_sum_assignment(cost_matrices_proteins[j]) for j in
                         range(number_of_matrices_proteins)]
 
+print(f'Computing of Lsa done time:{time.time() - start:6.2f}')
+start = time.time()
+
 divider_mapping_mutag = MatrixDivider.divider(cost_matrices_mutag, number_of_matrices_mutag, 4)
 divider_mapping_ohsu = MatrixDivider.divider(cost_matrices_ohsu, number_of_matrices_ohsu, 4)
 divider_mapping_proteins = MatrixDivider.divider(cost_matrices_proteins, number_of_matrices_proteins, 4)
 
+print(f'Computing of divider done time{time.time() - start:6.2f}')
+start = time.time()
+
 bucket_mapping_mutag = ParallelBucketAssignmentSolver.solve_multiple(cost_matrices_mutag, 2)
 bucket_mapping_ohsu = ParallelBucketAssignmentSolver.solve_multiple(cost_matrices_ohsu, 2)
 bucket_mapping_proteins = ParallelBucketAssignmentSolver.solve_multiple(cost_matrices_proteins, 2)
+
+print(f'Computing of bucket done time{time.time() - start:6.2f}')
+start = time.time()
 
 direct_mapping_mutag = [AssignmentAlgo.assignment_applied(cost_matrices_mutag[j]) for j in
                         range(number_of_matrices_mutag)]
@@ -73,384 +87,231 @@ direct_mapping_ohsu = [AssignmentAlgo.assignment_applied(cost_matrices_ohsu[j]) 
 direct_mapping_proteins = [AssignmentAlgo.assignment_applied(cost_matrices_proteins[j]) for j in
                            range(number_of_matrices_proteins)]
 
+print(f'Computing of direct mapping done time{time.time() - start:6.2f}')
 
-def compute_metrics(baseline_pairs, assigned_pairs):
-    tp = len(baseline_pairs.intersection(assigned_pairs))
-    fp = len(assigned_pairs - baseline_pairs)
-    fn = len(baseline_pairs - assigned_pairs)
-
-    precision = tp / (tp + fp) if (tp + fp) > 0 else 0.0
-    recall = tp / (tp + fn) if (tp + fn) > 0 else 0.0
-    f1 = (2 * precision * recall) / (precision + recall) if (precision + recall) > 0 else 0.0
-
-    return precision * 100, recall * 100, f1 * 100  # percentages
-
-
-def compute_agreement_score(baseline_pairs, assigned_pairs):  # NEW
-    return (len(baseline_pairs & assigned_pairs) /
-            len(baseline_pairs | assigned_pairs)) * 100 if baseline_pairs or assigned_pairs else 0.0
+data_cost_gap = {
+    'divider_mutag': [],
+    'divider_proteins': [],
+    'divider_ohsu': [],
+    'bucket_mutag': [],
+    'bucket_proteins': [],
+    'bucket_ohsu': [],
+    'direct_mutag': [],
+    'direct_proteins': [],
+    'direct_ohsu': [],
+}
 
 
-def compute_optimality_gap(cost_sum, optimal_sum):  # NEW
-    return ((cost_sum - optimal_sum) / optimal_sum) * 100 if optimal_sum != 0 else 0.0
+def cost_gap_evaluation(cost_matrices, optimal_mapping, approximate_mapping, algo, dataset):
+    for i in range(len(cost_matrices)):
+        matrix = cost_matrices[i]
+        opt_mapping_x = optimal_mapping[i][0]
+        opt_mapping_y = optimal_mapping[i][1]
+        opt_sum = sum(matrix[opt_mapping_x, opt_mapping_y])
+        app_sum = 0
+        if algo == 'divider':
+            app_mapping_x = approximate_mapping[i][0]
+            app_mapping_y = approximate_mapping[i][1]
+            app_sum = matrix[app_mapping_x, app_mapping_y].sum()
+        if algo == 'bucket':
+            app_mapping = approximate_mapping[i]
+            app_sum = sum([matrix[x, y] for x, y in app_mapping])
+        if algo == 'direct':
+            app_mapping = approximate_mapping[i]
+            app_sum = sum([matrix[row, col] for row, col in app_mapping.items()])
+
+        cost_gap = (app_sum - opt_sum) / (opt_sum + 1e-6)
+        data_cost_gap[f'{algo}_{dataset}'].append(cost_gap)
 
 
-def compute_rank_correlation(matrix, baseline_pairs, test_pairs):
-    
-    # Compares the cost rankings of the assignments in the baseline vs test.
-    # Returns Spearman and Kendall correlation in percentage.
-    
-    baseline_costs = [matrix[r, c] for r, c in baseline_pairs]
-    test_costs = [matrix[r, c] for r, c in test_pairs]
+cost_gap_evaluation(cost_matrices_mutag, lsa_mapping_mutag, divider_mapping_mutag, 'divider', 'mutag')
+cost_gap_evaluation(cost_matrices_mutag, lsa_mapping_mutag, bucket_mapping_mutag, 'bucket', 'mutag')
+cost_gap_evaluation(cost_matrices_mutag, lsa_mapping_mutag, direct_mapping_mutag, 'direct', 'mutag')
 
-    # Pad if needed in case of missing pairs
-    min_len = min(len(baseline_costs), len(test_costs))
-    baseline_costs = baseline_costs[:min_len]
-    test_costs = test_costs[:min_len]
+cost_gap_evaluation(cost_matrices_proteins, lsa_mapping_proteins, divider_mapping_proteins, 'divider', 'proteins')
+cost_gap_evaluation(cost_matrices_proteins, lsa_mapping_proteins, bucket_mapping_proteins, 'bucket', 'proteins')
+cost_gap_evaluation(cost_matrices_proteins, lsa_mapping_proteins, direct_mapping_proteins, 'direct', 'proteins')
 
-    spearman_corr, _ = spearmanr(baseline_costs, test_costs)
-    kendall_corr, _ = kendalltau(baseline_costs, test_costs)
+cost_gap_evaluation(cost_matrices_ohsu, lsa_mapping_ohsu, divider_mapping_ohsu, 'divider', 'ohsu')
+cost_gap_evaluation(cost_matrices_ohsu, lsa_mapping_ohsu, bucket_mapping_ohsu, 'bucket', 'ohsu')
+cost_gap_evaluation(cost_matrices_ohsu, lsa_mapping_ohsu, direct_mapping_ohsu, 'direct', 'ohsu')
 
-    return spearman_corr * 100 if spearman_corr is not None else 0.0, \
-        kendall_corr * 100 if kendall_corr is not None else 0.0
+summary_cost_gap = {}
 
+for key, values in data_cost_gap.items():
+    arr = np.array(values)
+    algo, dataset = key.split('_')
 
-def compute_r2_for_min_sums(min_sums_dict):
-    
-    # Computes R² between each algo's min sums and LSA's min sums.
-    # Returns a dict: algo -> R² value.
-    
-    results = {}
-    lsa_values = np.array(min_sums_dict['lsa'])
-    for algo in ['divider', 'bucket', 'direct']:
-        algo_values = np.array(min_sums_dict[algo])
-        results[algo] = r2_score(lsa_values, algo_values) * 100
-    return results
+    if algo not in summary_cost_gap:
+        summary_cost_gap[algo] = {}
 
+    summary_cost_gap[algo][f"{dataset}_mean"] = np.mean(arr)
+    summary_cost_gap[algo][f"{dataset}_std"] = np.std(arr)
+    summary_cost_gap[algo][f"{dataset}_median"] = np.median(arr)
 
-# For MUTAG
-mutag_min_sums = {'lsa': [], 'divider': [], 'bucket': [], 'direct': []}
-mutag_precision = {'divider': [], 'bucket': [], 'direct': []}
-mutag_recall = {'divider': [], 'bucket': [], 'direct': []}
-mutag_f1 = {'divider': [], 'bucket': [], 'direct': []}
-mutag_gap = {'divider': [], 'bucket': [], 'direct': []}
-mutag_agreement = {'divider': [], 'bucket': [], 'direct': []}
-mutag_spearman = {'divider': [], 'bucket': [], 'direct': []}
-mutag_kendall = {'divider': [], 'bucket': [], 'direct': []}
+# Convert to DataFrame (algorithms as rows, metrics as columns)
+df_summary_cost_gap = pd.DataFrame(summary_cost_gap).T.reset_index().rename(columns={"index": "Algorithm"})
 
-# --- For MUTAG ---
-for idx, key in enumerate(cost_matrices_mutag.keys()):
-    matrix = cost_matrices_mutag[key]
-    lsa_rows, lsa_cols = lsa_mapping_mutag[idx]
-    baseline_pairs = set(zip(lsa_rows, lsa_cols))
-    lsa_sum = matrix[lsa_rows, lsa_cols].sum()
-    mutag_min_sums['lsa'].append(lsa_sum)
+# Save to CSV
+df_summary_cost_gap.to_csv(f'./csv/{timestamp}_cost_gap_summary.csv', index=False)
 
-    # Divider
-    div_rows, div_cols = divider_mapping_mutag[idx]
-    div_pairs = set(zip(div_rows, div_cols))
-    div_sum = matrix[div_rows, div_cols].sum()
-    mutag_min_sums['divider'].append(div_sum)
-    p, r, f = compute_metrics(baseline_pairs, div_pairs)
-    mutag_precision['divider'].append(p)
-    mutag_recall['divider'].append(r)
-    mutag_f1['divider'].append(f)
-    mutag_gap['divider'].append(compute_optimality_gap(div_sum, lsa_sum))  # NEW
-    mutag_agreement['divider'].append(compute_agreement_score(baseline_pairs, div_pairs))  # NEW
-    sp, kt = compute_rank_correlation(matrix, baseline_pairs, div_pairs)
-    mutag_spearman['divider'].append(sp)
-    mutag_kendall['divider'].append(kt)
+print(df_summary_cost_gap)
 
-    # Bucket
-    bucket_pairs = set(bucket_mapping_mutag[idx])
-    bucket_sum = sum(matrix[r, c] for r, c in bucket_pairs)
-    mutag_min_sums['bucket'].append(bucket_sum)
-    p, r, f = compute_metrics(baseline_pairs, bucket_pairs)
-    mutag_precision['bucket'].append(p)
-    mutag_recall['bucket'].append(r)
-    mutag_f1['bucket'].append(f)
-    mutag_gap['bucket'].append(compute_optimality_gap(bucket_sum, lsa_sum))  # NEW
-    mutag_agreement['bucket'].append(compute_agreement_score(baseline_pairs, bucket_pairs))  # NEW
-    sp, kt = compute_rank_correlation(matrix, baseline_pairs, bucket_pairs)
-    mutag_spearman['bucket'].append(sp)
-    mutag_kendall['bucket'].append(kt)
-
-    # Direct
-    direct_pairs = set(direct_mapping_mutag[idx].items())
-    direct_sum = sum(matrix[r, c] for r, c in direct_pairs)
-    mutag_min_sums['direct'].append(direct_sum)
-    p, r, f = compute_metrics(baseline_pairs, direct_pairs)
-    mutag_precision['direct'].append(p)
-    mutag_recall['direct'].append(r)
-    mutag_f1['direct'].append(f)
-    mutag_gap['direct'].append(compute_optimality_gap(direct_sum, lsa_sum))  # NEW
-    mutag_agreement['direct'].append(compute_agreement_score(baseline_pairs, direct_pairs))  # NEW
-    sp, kt = compute_rank_correlation(matrix, baseline_pairs, direct_pairs)
-    mutag_spearman['direct'].append(sp)
-    mutag_kendall['direct'].append(kt)
-
-# For OHSU
-ohsu_min_sums = {'lsa': [], 'divider': [], 'bucket': [], 'direct': []}
-ohsu_precision = {'divider': [], 'bucket': [], 'direct': []}
-ohsu_recall = {'divider': [], 'bucket': [], 'direct': []}
-ohsu_f1 = {'divider': [], 'bucket': [], 'direct': []}
-ohsu_gap = {'divider': [], 'bucket': [], 'direct': []}
-ohsu_agreement = {'divider': [], 'bucket': [], 'direct': []}
-ohsu_spearman = {'divider': [], 'bucket': [], 'direct': []}
-ohsu_kendall = {'divider': [], 'bucket': [], 'direct': []}
-
-for idx, key in enumerate(cost_matrices_ohsu.keys()):
-    matrix = cost_matrices_ohsu[key]
-    lsa_rows, lsa_cols = lsa_mapping_ohsu[idx]
-    baseline_pairs = set(zip(lsa_rows, lsa_cols))
-    ohsu_min_sums['lsa'].append(matrix[lsa_rows, lsa_cols].sum())
-
-    div_rows, div_cols = divider_mapping_ohsu[idx]
-    div_pairs = set(zip(div_rows, div_cols))
-    ohsu_min_sums['divider'].append(matrix[div_rows, div_cols].sum())
-    p, r, f = compute_metrics(baseline_pairs, div_pairs)
-    ohsu_precision['divider'].append(p)
-    ohsu_recall['divider'].append(r)
-    ohsu_f1['divider'].append(f)
-    ohsu_gap['divider'].append(compute_agreement_score(baseline_pairs, div_pairs))
-    ohsu_agreement['divider'].append(compute_agreement_score(baseline_pairs, div_pairs))
-    sp, kt = compute_rank_correlation(matrix, baseline_pairs, div_pairs)
-    ohsu_spearman['divider'].append(sp)
-    ohsu_kendall['divider'].append(kt)
-
-    bucket_pairs = set(bucket_mapping_ohsu[idx])
-    bucket_sum = sum(matrix[r, c] for r, c in bucket_pairs)
-    ohsu_min_sums['bucket'].append(bucket_sum)
-    p, r, f = compute_metrics(baseline_pairs, bucket_pairs)
-    ohsu_precision['bucket'].append(p)
-    ohsu_recall['bucket'].append(r)
-    ohsu_f1['bucket'].append(f)
-    ohsu_gap['bucket'].append(compute_agreement_score(baseline_pairs, bucket_pairs))
-    ohsu_agreement['bucket'].append(compute_agreement_score(baseline_pairs, bucket_pairs))
-    sp, kt = compute_rank_correlation(matrix, baseline_pairs, bucket_pairs)
-    ohsu_spearman['bucket'].append(sp)
-    ohsu_kendall['bucket'].append(kt)
-
-    direct_assignment = direct_mapping_ohsu[idx]
-    direct_pairs = set(direct_assignment.items())
-    direct_sum = sum(matrix[r, c] for r, c in direct_pairs)
-    ohsu_min_sums['direct'].append(direct_sum)
-    p, r, f = compute_metrics(baseline_pairs, direct_pairs)
-    ohsu_precision['direct'].append(p)
-    ohsu_recall['direct'].append(r)
-    ohsu_f1['direct'].append(f)
-    ohsu_gap['direct'].append(compute_agreement_score(baseline_pairs, direct_pairs))
-    ohsu_agreement['direct'].append(compute_agreement_score(baseline_pairs, direct_pairs))
-    sp, kt = compute_rank_correlation(matrix, baseline_pairs, direct_pairs)
-    ohsu_spearman['direct'].append(sp)
-    ohsu_kendall['direct'].append(kt)
-
-# Fort PROTEINS
-proteins_min_sums = {'lsa': [], 'divider': [], 'bucket': [], 'direct': []}
-proteins_precision = {'divider': [], 'bucket': [], 'direct': []}
-proteins_recall = {'divider': [], 'bucket': [], 'direct': []}
-proteins_f1 = {'divider': [], 'bucket': [], 'direct': []}
-proteins_gap = {'divider': [], 'bucket': [], 'direct': []}
-proteins_agreement = {'divider': [], 'bucket': [], 'direct': []}
-proteins_spearman = {'divider': [], 'bucket': [], 'direct': []}
-proteins_kendall = {'divider': [], 'bucket': [], 'direct': []}
-
-for idx, key in enumerate(cost_matrices_proteins.keys()):
-    matrix = cost_matrices_proteins[key]
-    lsa_rows, lsa_cols = lsa_mapping_proteins[idx]
-    baseline_pairs = set(zip(lsa_rows, lsa_cols))
-    proteins_min_sums['lsa'].append(matrix[lsa_rows, lsa_cols].sum())
-
-    div_rows, div_cols = divider_mapping_proteins[idx]
-    div_pairs = set(zip(div_rows, div_cols))
-    proteins_min_sums['divider'].append(matrix[div_rows, div_cols].sum())
-    p, r, f = compute_metrics(baseline_pairs, div_pairs)
-    proteins_precision['divider'].append(p)
-    proteins_recall['divider'].append(r)
-    proteins_f1['divider'].append(f)
-    proteins_gap['divider'].append(compute_agreement_score(baseline_pairs, div_pairs))
-    proteins_agreement['divider'].append(compute_agreement_score(baseline_pairs, div_pairs))
-    sp, kt = compute_rank_correlation(matrix, baseline_pairs, div_pairs)
-    proteins_spearman['divider'].append(sp)
-    proteins_kendall['divider'].append(kt)
-
-    bucket_pairs = set(bucket_mapping_proteins[idx])
-    bucket_sum = sum(matrix[r, c] for r, c in bucket_pairs)
-    proteins_min_sums['bucket'].append(bucket_sum)
-    p, r, f = compute_metrics(baseline_pairs, bucket_pairs)
-    proteins_precision['bucket'].append(p)
-    proteins_recall['bucket'].append(r)
-    proteins_f1['bucket'].append(f)
-    proteins_gap['bucket'].append(compute_agreement_score(baseline_pairs, bucket_pairs))
-    proteins_agreement['bucket'].append(compute_agreement_score(baseline_pairs, bucket_pairs))
-    sp, kt = compute_rank_correlation(matrix, baseline_pairs, bucket_pairs)
-    proteins_spearman['bucket'].append(sp)
-    proteins_kendall['bucket'].append(kt)
-
-    direct_assignment = direct_mapping_proteins[idx]
-    direct_pairs = set(direct_assignment.items())
-    direct_sum = sum(matrix[r, c] for r, c in direct_pairs)
-    proteins_min_sums['direct'].append(direct_sum)
-    p, r, f = compute_metrics(baseline_pairs, direct_pairs)
-    proteins_precision['direct'].append(p)
-    proteins_recall['direct'].append(r)
-    proteins_f1['direct'].append(f)
-    proteins_gap['direct'].append(compute_agreement_score(baseline_pairs, direct_pairs))
-    proteins_agreement['direct'].append(compute_agreement_score(baseline_pairs, direct_pairs))
-    sp, kt = compute_rank_correlation(matrix, baseline_pairs, direct_pairs)
-    proteins_spearman['direct'].append(sp)
-    proteins_kendall['direct'].append(kt)
+data_acc = {
+    'divider_mutag': [],
+    'divider_proteins': [],
+    'divider_ohsu': [],
+    'bucket_mutag': [],
+    'bucket_proteins': [],
+    'bucket_ohsu': [],
+    'direct_mutag': [],
+    'direct_proteins': [],
+    'direct_ohsu': [],
+}
 
 
-def plot_boxplot(metric_dict, metric_name, dataset_label):
-    data = []
-    for algo in ['divider', 'bucket', 'direct']:
-        for val in metric_dict[algo]:
-            data.append({'Algorithm': algo, metric_name: val})
-
-    df = pd.DataFrame(data)
-    plt.figure(figsize=(8, 6))
-    sns.boxplot(x='Algorithm', y=metric_name, data=df, palette=colors)
-    plt.title(f"{metric_name} Distribution - {dataset_label} Dataset")
-    plt.grid(axis='y', linestyle='--', alpha=0.7)
-
-    # Save CSV
-    csv_path = f'./csv/{timestamp}_{dataset_label}_{metric_name.lower().replace(" ", "_")}_boxplot.csv'
-    df.to_csv(csv_path, index=False)
-    print(f"Saved boxplot data CSV: {csv_path}")
-
-    # Save plot
-    filename = f'./png/{timestamp}_{dataset_label}_{metric_name.lower().replace(" ", "_")}_boxplot.png'
-    plt.savefig(filename, bbox_inches='tight')
-    print(f"Saved boxplot PNG: {filename}")
-    plt.show()
-
-
-def plot_metric(metric_dict, metric_name, dataset_label):
-    algorithms = ['divider', 'bucket', 'direct']
-    means = [np.mean(metric_dict[algo]) for algo in algorithms]
-    stds = [np.std(metric_dict[algo]) for algo in algorithms]
-
-    plt.figure(figsize=(8, 5))
-    bars = plt.bar(algorithms, means, yerr=stds, capsize=5,
-                   color=[colors['divider'], colors['bucket'], colors['direct']])
-    plt.ylabel(metric_name)
-    plt.title(f"{metric_name} Comparison - {dataset_label} Dataset")
-    plt.ylim(0, 110 if 'score' in metric_name.lower() else None)
-    plt.grid(axis='y', linestyle='--', alpha=0.7)
-
-    # Save plot
-    filename = f'./png/{timestamp}_{dataset_label}_{metric_name.lower().replace(" ", "_")}.png'
-    plt.savefig(filename, bbox_inches='tight')
-    print(f"Saved plot PNG: {filename}")
-    plt.show()
+def acc_evaluation(cost_matrix, optimal_mapping, approximate_mapping, algo, dataset):
+    for i in range(len(cost_matrix)):
+        matrix = cost_matrix[i]
+        opt_mapping_x = optimal_mapping[i][0]
+        opt_mapping_y = optimal_mapping[i][1]
+        count = 0
+        n = len(opt_mapping_x)
+        if algo == 'divider':
+            app_mapping_x = approximate_mapping[i][0]
+            app_mapping_y = approximate_mapping[i][1]
+            for k in range(n):
+                count += 1 if (opt_mapping_x[k] == app_mapping_x[k] and opt_mapping_y[k] == app_mapping_y[k]) else 0
+        if algo == 'bucket':
+            app_mapping = approximate_mapping[i]
+            for k in range(n):
+                count += 1 if (opt_mapping_x[k] == app_mapping[k][0] and opt_mapping_y[k] == app_mapping[k][1]) else 0
+        if algo == 'direct':
+            app_mapping = approximate_mapping[i]
+            for k in range(n):
+                count += 1 if (opt_mapping_y[k] == app_mapping[k]) else 0
+        acc = count / n
+        data_acc[f'{algo}_{dataset}'].append(acc)
 
 
-def create_summary_df(min_sums, precision, recall, f1, label, gap, agreement,
-                      spearman=None, kendall=None, r2_dict=None):
-    data = []
-    for algo in ['lsa', 'divider', 'bucket', 'direct']:
-        if algo == 'lsa':
-            data.append([algo,
-                         f"{np.mean(min_sums[algo]):.3f} ± {np.std(min_sums[algo]):.3f}",
-                         '-', '-', '-', '-', '-', '-', '-', '-'])
-        else:
-            data.append([
-                algo,
-                f"{np.mean(min_sums[algo]):.3f} ± {np.std(min_sums[algo]):.3f}",
-                f"{np.mean(precision[algo]):.1f}% ± {np.std(precision[algo]):.1f}%",
-                f"{np.mean(recall[algo]):.1f}% ± {np.std(recall[algo]):.1f}%",
-                f"{np.mean(f1[algo]):.1f}% ± {np.std(f1[algo]):.1f}%",
-                f"{np.mean(gap[algo]):.2f}% ± {np.std(gap[algo]):.2f}%",
-                f"{np.mean(agreement[algo]):.1f}% ± {np.std(agreement[algo]):.1f}%",
-                f"{np.mean(spearman[algo]):.1f}% ± {np.std(spearman[algo]):.1f}%",
-                f"{np.mean(kendall[algo]):.1f}% ± {np.std(kendall[algo]):.1f}%",
-                f"{r2_dict[algo]:.2f}%"
-            ])
-    df = pd.DataFrame(data, columns=[
-        'Algorithm', 'Mean Cost Sum', 'Precision', 'Recall', 'F1 Score',
-        'Optimality Gap (%)', 'Agreement Score (%)',
-        'Spearman (%)', 'Kendall (%)', 'R² (%)'
-    ])
-    csv_path = f'./csv/{timestamp}_{label}_summary.csv'
-    df.to_csv(csv_path, index=False)
-    print(f"Saved summary CSV: {csv_path}")
-    return df
+acc_evaluation(cost_matrices_mutag, lsa_mapping_mutag, divider_mapping_mutag, 'divider', 'mutag')
+acc_evaluation(cost_matrices_mutag, lsa_mapping_mutag, bucket_mapping_mutag, 'bucket', 'mutag')
+acc_evaluation(cost_matrices_mutag, lsa_mapping_mutag, direct_mapping_mutag, 'direct', 'mutag')
+
+acc_evaluation(cost_matrices_proteins, lsa_mapping_proteins, divider_mapping_proteins, 'divider', 'proteins')
+acc_evaluation(cost_matrices_proteins, lsa_mapping_proteins, bucket_mapping_proteins, 'bucket', 'proteins')
+acc_evaluation(cost_matrices_proteins, lsa_mapping_proteins, direct_mapping_proteins, 'direct', 'proteins')
+
+acc_evaluation(cost_matrices_ohsu, lsa_mapping_ohsu, divider_mapping_ohsu, 'divider', 'ohsu')
+acc_evaluation(cost_matrices_ohsu, lsa_mapping_ohsu, bucket_mapping_ohsu, 'bucket', 'ohsu')
+acc_evaluation(cost_matrices_ohsu, lsa_mapping_ohsu, direct_mapping_ohsu, 'direct', 'ohsu')
+
+summary_acc = {}
+
+for key, values in data_acc.items():
+    arr = np.array(values)
+    algo, dataset = key.split('_')
+
+    if algo not in summary_acc:
+        summary_acc[algo] = {}
+
+    summary_acc[algo][f"{dataset}_mean"] = np.mean(arr)
+    summary_acc[algo][f"{dataset}_std"] = np.std(arr)
+    summary_acc[algo][f"{dataset}_median"] = np.median(arr)
+
+# Convert to DataFrame (algorithms as rows, metrics as columns)
+df_summary_acc = pd.DataFrame(summary_acc).T.reset_index().rename(columns={"index": "Algorithm"})
+
+# Save to CSV
+df_summary_acc.to_csv(f'./csv/{timestamp}_acc_summary.csv', index=False)
+
+print(df_summary_acc)
+
+# Common settings
+figsize = (8, 5)
+palette = colors
+sns.set(style="whitegrid", context="talk", font_scale=1.1)
 
 
-def save_per_instance_variability(label, precision, recall, f1, gap, agreement):
-    records = []
-    for algo in ['divider', 'bucket', 'direct']:
-        for metric_name, values in [
-            ('Precision', precision[algo]),
-            ('Recall', recall[algo]),
-            ('F1 Score', f1[algo]),
-            ('Optimality Gap (%)', gap[algo]),
-            ('Agreement Score (%)', agreement[algo])
-        ]:
-            records.append({
-                'Algorithm': algo,
-                'Metric': metric_name,
-                'Min': np.min(values),
-                '25%': np.percentile(values, 25),
-                'Median': np.median(values),
-                '75%': np.percentile(values, 75),
-                'Max': np.max(values)
-            })
-    df = pd.DataFrame(records)
-    csv_path = f'./csv/{timestamp}_{label}_variability.csv'
-    df.to_csv(csv_path, index=False)
-    print(f"Saved per-instance variability CSV: {csv_path}")
+def plot_bar(df_plot, y_col, title, ylabel, log_scale=False, save_name=None):
+    """
+    Plots a barplot with algorithm names automatically renamed.
+    """
+    # Rename algorithms using the global mapping
+    df_plot['Algorithm'] = df_plot['Algorithm'].map(ALGO_NAME_MAP)
+
+    plt.figure(figsize=figsize)
+    ax = sns.barplot(data=df_plot, x='Dataset', y=y_col, hue='Algorithm', palette=colors)
+
+    if log_scale:
+        plt.yscale('log')
+
+    plt.title(title)
+    plt.ylabel(ylabel)
+    plt.xlabel('')  # remove x-axis label
+
+    # Move legend outside plot
+    plt.legend(title="Algorithm", loc='center left', bbox_to_anchor=(1, 0.5))
+
+    if save_name:
+        plt.savefig(save_name, dpi=300, bbox_inches='tight')
+
+    # plt.show()
 
 
-from scipy.stats import f_oneway, kruskal
+# -------------------------------
+# Median Cost Gap
+# -------------------------------
+median_cols = [col for col in df_summary_cost_gap.columns if 'median' in col]
+df_median_cost_gap = df_summary_cost_gap[['Algorithm'] + median_cols]
+df_median_cost_gap_plot = df_median_cost_gap.melt(id_vars='Algorithm', var_name='Dataset', value_name='Median')
+df_median_cost_gap_plot['Dataset'] = df_median_cost_gap_plot['Dataset'].str.replace('_median', '').str.upper()
 
+plot_bar(df_median_cost_gap_plot,
+         y_col='Median',
+         title="Median Cost Gap by Algorithm and Dataset",
+         ylabel="Median Cost Gap",
+         save_name=f'./png/cost_gap_median_barplot_log.png')
 
-def statistical_tests(metric_dict, metric_name, dataset_label):
-    data = [metric_dict[algo] for algo in ['divider', 'bucket', 'direct']]
-    anova_p = f_oneway(*data).pvalue
-    kruskal_p = kruskal(*data).pvalue
-    print(f"{dataset_label} - {metric_name} | ANOVA p={anova_p:.4e}, Kruskal-Wallis p={kruskal_p:.4e}")
+# -------------------------------
+# Repeat for the others
+# -------------------------------
 
+# Median Accuracy
+median_cols = [col for col in df_summary_acc.columns if 'median' in col]
+df_median_acc = df_summary_acc[['Algorithm'] + median_cols]
+df_median_acc_plot = df_median_acc.melt(id_vars='Algorithm', var_name='Dataset', value_name='Median')
+df_median_acc_plot['Dataset'] = df_median_acc_plot['Dataset'].str.replace('_median', '').str.upper()
 
-mutag_r2 = compute_r2_for_min_sums(mutag_min_sums)
-ohsu_r2 = compute_r2_for_min_sums(ohsu_min_sums)
-proteins_r2 = compute_r2_for_min_sums(proteins_min_sums)
+plot_bar(df_median_acc_plot,
+         y_col='Median',
+         title="Median Accuracy by Algorithm and Dataset",
+         ylabel="Median Accuracy",
+         log_scale=False,
+         save_name=f'./png/acc_median_barplot.png')
 
-# Create and save summary tables (also prints)
-mutag_summary_df = create_summary_df(mutag_min_sums, mutag_precision, mutag_recall, mutag_f1,
-                                     "MUTAG", mutag_gap, mutag_agreement, mutag_spearman, mutag_kendall, mutag_r2)
-ohsu_summary_df = create_summary_df(ohsu_min_sums, ohsu_precision, ohsu_recall, ohsu_f1,
-                                    "OHSU", ohsu_gap, ohsu_agreement, ohsu_spearman, ohsu_kendall, ohsu_r2)
-proteins_summary_df = create_summary_df(proteins_min_sums, proteins_precision, proteins_recall, proteins_f1, "PROTEINS",
-                                        proteins_gap, proteins_agreement, proteins_spearman, proteins_kendall,
-                                        proteins_r2)
+# Mean Cost Gap
+mean_cols = [col for col in df_summary_cost_gap.columns if 'mean' in col]
+df_mean_cost_gap = df_summary_cost_gap[['Algorithm'] + mean_cols]
+df_mean_cost_gap_plot = df_mean_cost_gap.melt(id_vars='Algorithm', var_name='Dataset', value_name='Mean')
+df_mean_cost_gap_plot['Dataset'] = df_mean_cost_gap_plot['Dataset'].str.replace('_mean', '').str.upper()
 
-# Save bar plots for MUTAG
-plot_metric(mutag_precision, "Precision (%)", "MUTAG")
-plot_metric(mutag_recall, "Recall (%)", "MUTAG")
-plot_metric(mutag_f1, "F1 Score (%)", "MUTAG")
+plot_bar(df_mean_cost_gap_plot,
+         y_col='Mean',
+         title="Mean Cost Gap by Algorithm and Dataset",
+         ylabel="Mean Cost Gap (log scale)",
+         log_scale=True,
+         save_name=f'./png/cost_gap_mean_barplot_log.png')
 
-# Save bar plots for OHSU
-plot_metric(ohsu_precision, "Precision (%)", "OHSU")
-plot_metric(ohsu_recall, "Recall (%)", "OHSU")
-plot_metric(ohsu_f1, "F1 Score (%)", "OHSU")
+# Mean Accuracy
+mean_cols = [col for col in df_summary_acc.columns if 'mean' in col]
+df_mean_acc = df_summary_acc[['Algorithm'] + mean_cols]
+df_mean_acc_plot = df_mean_acc.melt(id_vars='Algorithm', var_name='Dataset', value_name='Mean')
+df_mean_acc_plot['Dataset'] = df_mean_acc_plot['Dataset'].str.replace('_mean', '').str.upper()
 
-# Save bar plots for PROTEINS
-plot_metric(proteins_precision, "Precision (%)", "PROTEINS")
-plot_metric(proteins_recall, "Recall (%)", "PROTEINS")
-plot_metric(proteins_f1, "F1 Score (%)", "PROTEINS")
-
-# Save boxplots for MUTAG
-plot_boxplot(mutag_f1, "F1 Score (%)", "MUTAG")
-
-# Save boxplots for OHSU
-plot_boxplot(ohsu_f1, "F1 Score (%)", "OHSU")
-
-# Save boxplots for PROTEINS
-plot_boxplot(proteins_f1, "F1 Score (%)", "PROTEINS")
-
-save_per_instance_variability("MUTAG", mutag_precision, mutag_recall, mutag_f1, mutag_gap, mutag_agreement)
-save_per_instance_variability("OHSU", ohsu_precision, ohsu_recall, ohsu_f1, ohsu_gap, ohsu_agreement)
-save_per_instance_variability("PROTEINS", proteins_precision, proteins_recall, proteins_f1, proteins_gap,
-                              proteins_agreement)
+plot_bar(df_mean_acc_plot,
+         y_col='Mean',
+         title="Mean Accuracy by Algorithm and Dataset",
+         ylabel="Mean Accuracy",
+         log_scale=False,
+         save_name=f'./png/acc_mean_barplot.png')
